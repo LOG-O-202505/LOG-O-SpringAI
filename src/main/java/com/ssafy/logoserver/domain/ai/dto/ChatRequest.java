@@ -1,0 +1,17 @@
+package com.ssafy.logoserver.domain.ai.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.util.UUID;
+
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class ChatRequest {
+    private UUID chatId;
+    private String question;
+}

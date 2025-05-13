@@ -1,0 +1,14 @@
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY} # ?? ??? ??
+      chat:
+        options:
+          model: ${GPT_MODEL}
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY} # ?? ??? ??
+      chat:
+        options:
+          model: ${CLAUDE_MODEL}
