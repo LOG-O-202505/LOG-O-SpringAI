@@ -31,18 +31,22 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        // AI 관련 API는 인증 없이 접근 가능
-                        .requestMatchers("/api/chat/**").permitAll()
-                        // 회원가입과 로그인은 인증 없이 접근 가능
-                        .requestMatchers("/api/auth/**").permitAll()
-                        // Swagger UI 관련 경로 허용
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                                // API 문서 접근 허용
+                                .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
+                                // AI 관련 API는 인증 없이 접근 가능
+                                .requestMatchers("/api/chat/**").permitAll()
+                                // 회원가입과 로그인은 인증 없이 접근 가능
+                                .requestMatchers("/api/auth/**").permitAll()
+                                // Swagger UI 관련 경로 허용
+                                .requestMatchers("/swagger-resources/**").permitAll()
+                                // 개발 환경을 위해 모든 요청 허용 (실제 운영 환경에서는 제거해야 함)
+                                .requestMatchers("/**").permitAll()
                         // 나머지 API는 인증 필요
-                        .requestMatchers("/api/**").authenticated()
+                        //.requestMatchers("/api/**").authenticated()
                         // 관리자 API는 ADMIN 역할 필요
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        //.requestMatchers("/api/admin/**").hasRole("ADMIN")
                         // 그 외 모든 요청은 인증 필요
-                        .anyRequest().authenticated()
+                        //.anyRequest().authenticated()
                 );
 
         return http.build();

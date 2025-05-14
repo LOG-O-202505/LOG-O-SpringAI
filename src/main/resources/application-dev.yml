@@ -8,26 +8,25 @@ spring:
       api-key: ${OPENAI_API_KEY}
       chat:
         options:
-          model: ${GPT_MODEL}
+          model: ${GPT_MODEL:gpt-3.5-turbo}
     anthropic:
       api-key: ${ANTHROPIC_API_KEY}
       chat:
         options:
-          model: ${CLAUDE_MODEL}
+          model: ${CLAUDE_MODEL:claude-3-haiku-20240307}
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    url: jdbc:mysql://localhost:3307/loggodb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&useUnicode=true
+    username: root
+    password: root
   jpa:
     properties:
       hibernate:
         show_sql: true
         format_sql: true
     hibernate:
-      ddl-auto: update
+      ddl-auto: create # 개발 환경에서는 create로 설정하여 매번 테이블을 새로 생성
     database-platform: org.hibernate.dialect.MySQLDialect
-
 
 # 로깅 설정
 logging:
@@ -35,7 +34,6 @@ logging:
     com.ssafy.logoserver: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-  port: 8080
 
 # Swagger 설정
 springdoc:
