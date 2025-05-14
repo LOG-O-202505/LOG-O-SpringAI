@@ -24,8 +24,11 @@ spring:
       hibernate:
         show_sql: true
         format_sql: true
+        physical_naming_strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     hibernate:
-      ddl-auto: create # 개발 환경에서는 create로 설정하여 매번 테이블을 새로 생성
+      ddl-auto: validate
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     database-platform: org.hibernate.dialect.MySQLDialect
 
 # 로깅 설정

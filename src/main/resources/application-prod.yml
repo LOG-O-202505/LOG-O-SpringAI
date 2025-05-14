@@ -24,8 +24,11 @@ spring:
       hibernate:
         show_sql: false
         format_sql: false
+        physical_naming_strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     hibernate:
-      ddl-auto: update # 운영 환경에서는 update로 설정하여 데이터 손실 방지
+      ddl-auto: validate
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     database-platform: org.hibernate.dialect.MySQLDialect
 
 # 로깅 설정

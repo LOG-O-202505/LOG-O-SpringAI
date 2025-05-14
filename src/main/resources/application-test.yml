@@ -11,8 +11,11 @@ spring:
       hibernate:
         show_sql: true
         format_sql: true
+        physical_naming_strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     database-platform: org.hibernate.dialect.H2Dialect
   ai:
     openai:

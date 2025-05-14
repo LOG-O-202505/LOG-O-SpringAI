@@ -56,4 +56,4 @@ public class UserRequestDto {
                 .role(role != null ? role : User.Role.USER)
                 .build();
     }
-}
+}   
