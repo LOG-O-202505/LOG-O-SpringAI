@@ -79,7 +79,35 @@ public class UserControllerTest {
     void getUserByUuid() throws Exception {
         // when
         ResultActions resultActions = mockMvc.perform(
-                get("/api/users/{uuid}", testUser.getUuid()));
+                get("/api/users/uuid/{uuid}", testUser.getUuid()));
+
+        // then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status", is("success")))
+                .andExpect(jsonPath("$.data.id", is(testUser.getId())));
+    }
+
+    @Test
+    @DisplayName("사용자 ID로 사용자 조회")
+    void getUserById() throws Exception {
+        // when
+        ResultActions resultActions = mockMvc.perform(
+                get("/api/users/id/{id}", testUser.getId()));
+
+        // then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status", is("success")))
+                .andExpect(jsonPath("$.data.nickname", is(testUser.getNickname())));
+    }
+
+    @Test
+    @DisplayName("닉네임으로 사용자 조회")
+    void getUserByNickname() throws Exception {
+        // when
+        ResultActions resultActions = mockMvc.perform(
+                get("/api/users/nickname/{nickname}", testUser.getNickname()));
 
         // then
         resultActions
@@ -114,6 +142,34 @@ public class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", is("success")))
                 .andExpect(jsonPath("$.data.id", is("newuser")));
+    }
+
+    @Test
+    @DisplayName("닉네임 중복으로 사용자 생성 실패")
+    void createUserFailDueToNicknameDuplicate() throws Exception {
+        // given
+        UserRequestDto userRequestDto = UserRequestDto.builder()
+                .id("newuser")
+                .password("newpassword123")
+                .name("새사용자")
+                .nickname("테스터") // 이미 존재하는 닉네임
+                .birthday(LocalDate.of(1995, 5, 5))
+                .address("서울특별시 서초구")
+                .phone("010-9876-5432")
+                .role(User.Role.USER)
+                .build();
+
+        // when
+        ResultActions resultActions = mockMvc.perform(
+                post("/api/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userRequestDto)));
+
+        // then
+        resultActions
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status", is("error")))
+                .andExpect(jsonPath("$.message").value("이미 존재하는 닉네임입니다: 테스터"));
     }
 
     @Test
@@ -152,7 +208,7 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.status", is("success")));
 
         // 실제로 삭제되었는지 확인
-        mockMvc.perform(get("/api/users/{uuid}", testUser.getUuid()))
+        mockMvc.perform(get("/api/users/uuid/{uuid}", testUser.getUuid()))
                 .andExpect(status().isNotFound());
     }
 }

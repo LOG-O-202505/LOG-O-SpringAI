@@ -36,8 +36,8 @@ public class UserController {
         return ResponseUtil.success(users);
     }
 
-    @GetMapping("/{uuid}")
-    @Operation(summary = "사용자 상세 조회", description = "UUID로 특정 사용자의 상세 정보를 조회합니다.")
+    @GetMapping("/uuid/{uuid}")
+    @Operation(summary = "UUID로 사용자 조회", description = "UUID로 특정 사용자의 상세 정보를 조회합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공"),
             @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음", content = @Content)
@@ -47,6 +47,40 @@ public class UserController {
             @PathVariable Long uuid) {
         try {
             UserDto user = userService.getUserById(uuid);
+            return ResponseUtil.success(user);
+        } catch (IllegalArgumentException e) {
+            return ResponseUtil.notFound(e.getMessage());
+        }
+    }
+
+    @GetMapping("/id/{id}")
+    @Operation(summary = "ID로 사용자 조회", description = "사용자 ID로 특정 사용자의 상세 정보를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음", content = @Content)
+    })
+    public ResponseEntity<Map<String, Object>> getUserById(
+            @Parameter(description = "사용자 ID", required = true)
+            @PathVariable String id) {
+        try {
+            UserDto user = userService.getUserByLoginId(id);
+            return ResponseUtil.success(user);
+        } catch (IllegalArgumentException e) {
+            return ResponseUtil.notFound(e.getMessage());
+        }
+    }
+
+    @GetMapping("/nickname/{nickname}")
+    @Operation(summary = "닉네임으로 사용자 조회", description = "닉네임으로 특정 사용자의 상세 정보를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음", content = @Content)
+    })
+    public ResponseEntity<Map<String, Object>> getUserByNickname(
+            @Parameter(description = "사용자 닉네임", required = true)
+            @PathVariable String nickname) {
+        try {
+            UserDto user = userService.getUserByNickname(nickname);
             return ResponseUtil.success(user);
         } catch (IllegalArgumentException e) {
             return ResponseUtil.notFound(e.getMessage());
@@ -77,6 +111,7 @@ public class UserController {
     @Operation(summary = "사용자 정보 수정", description = "UUID로 특정 사용자의 정보를 수정합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "수정 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청", content = @Content),
             @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음", content = @Content),
             @ApiResponse(responseCode = "500", description = "서버 오류", content = @Content)
     })
@@ -89,6 +124,9 @@ public class UserController {
             UserDto updatedUser = userService.updateUser(uuid, userRequestDto);
             return ResponseUtil.success(updatedUser);
         } catch (IllegalArgumentException e) {
+            if (e.getMessage().contains("이미 존재하는 닉네임")) {
+                return ResponseUtil.badRequest(e.getMessage());
+            }
             return ResponseUtil.notFound(e.getMessage());
         } catch (Exception e) {
             return ResponseUtil.internalServerError("사용자 정보 업데이트 중 오류가 발생했습니다: " + e.getMessage());

@@ -27,7 +27,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long uuid;
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, length = 50, unique = true, updatable = false)
     private String id;
 
     @Column(nullable = false, length = 100)
@@ -36,7 +36,7 @@ public class User {
     @Column(nullable = false, length = 50)
     private String name;
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, length = 50, unique = true)
     private String nickname;
 
     @Column(nullable = false)
@@ -45,7 +45,7 @@ public class User {
     @Column(nullable = false, length = 100)
     private String address;
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 20, unique = true)
     private String phone;
 
     @Column(name = "profile_image", length = 255)

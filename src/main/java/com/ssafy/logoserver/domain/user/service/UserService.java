@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,11 +39,23 @@ public class UserService {
         return UserDto.fromEntity(user);
     }
 
+    public UserDto getUserByNickname(String nickname) {
+        User user = userRepository.findByNickname(nickname)
+                .orElseThrow(() -> new IllegalArgumentException("해당 닉네임의 사용자가 존재하지 않습니다: " + nickname));
+        return UserDto.fromEntity(user);
+    }
+
     @Transactional
     public UserDto createUser(UserRequestDto userRequestDto) {
         // ID 중복 체크
         if (userRepository.existsById(userRequestDto.getId())) {
             throw new IllegalArgumentException("이미 존재하는 ID입니다: " + userRequestDto.getId());
+        }
+
+        // 닉네임 중복 체크
+        Optional<User> existingUserWithNickname = userRepository.findByNickname(userRequestDto.getNickname());
+        if (existingUserWithNickname.isPresent()) {
+            throw new IllegalArgumentException("이미 존재하는 닉네임입니다: " + userRequestDto.getNickname());
         }
 
         // 비밀번호 암호화
@@ -66,6 +79,14 @@ public class UserService {
     public UserDto updateUser(Long uuid, UserRequestDto userRequestDto) {
         User user = userRepository.findByUuid(uuid)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자가 존재하지 않습니다: " + uuid));
+
+        // 닉네임 변경 시 중복 체크
+        if (userRequestDto.getNickname() != null && !userRequestDto.getNickname().equals(user.getNickname())) {
+            Optional<User> existingUserWithNickname = userRepository.findByNickname(userRequestDto.getNickname());
+            if (existingUserWithNickname.isPresent()) {
+                throw new IllegalArgumentException("이미 존재하는 닉네임입니다: " + userRequestDto.getNickname());
+            }
+        }
 
         // 기존 사용자 정보를 업데이트
         User updatedUser = User.builder()
