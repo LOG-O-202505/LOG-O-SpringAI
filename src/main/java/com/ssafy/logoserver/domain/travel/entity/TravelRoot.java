@@ -31,12 +31,11 @@ public class TravelRoot {
     @JoinColumn(name = "area_id", nullable = false)
     private Area area;
 
-    @Column(length = 255)
     private String memo;
 
     private Integer day;
 
-    @Column(name = "travel_date", nullable = false)
+    @Column(name = "travel_date")
     private LocalDate travelDate;
 
     @OneToMany(mappedBy = "travelDay", cascade = CascadeType.ALL)

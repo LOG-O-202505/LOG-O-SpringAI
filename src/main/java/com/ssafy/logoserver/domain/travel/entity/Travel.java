@@ -30,10 +30,8 @@ public class Travel {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false, length = 100)
     private String location;
 
-    @Column(length = 100)
     private String title;
 
     @Column(name = "start_date")
@@ -44,11 +42,15 @@ public class Travel {
 
     private Integer peoples;
 
-    @Column(length = 10)
     private String season;
 
     @CreationTimestamp
     private LocalDateTime created;
+
+    private String memo;
+
+    @Column(name = "total_budget")
+    private Integer totalBudget;
 
     @OneToMany(mappedBy = "travel", cascade = CascadeType.ALL)
     private List<TravelRoot> travelRoots = new ArrayList<>();

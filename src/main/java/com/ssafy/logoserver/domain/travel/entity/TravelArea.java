@@ -38,12 +38,10 @@ public class TravelArea {
     @JoinColumn(name = "travel_day_id", nullable = false)
     private TravelRoot travelDay;
 
-    @Column(nullable = false)
     private Integer seq;
 
-    @Column(name = "start_time", nullable = false)
+    @Column(name = "start_time")
     private LocalDateTime startTime;
 
-    @Column(length = 255)
     private String memo;
 }
