@@ -23,7 +23,10 @@ public class Verification {
     private Long vuid;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "place_id", nullable = false)
+    @JoinColumns({
+            @JoinColumn(name = "place_id", referencedColumnName = "puid"),
+            @JoinColumn(name = "place_address", referencedColumnName = "address")
+    })
     private Place place;
 
     @ManyToOne(fetch = FetchType.LAZY)
