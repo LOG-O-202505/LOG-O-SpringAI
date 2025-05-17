@@ -23,12 +23,16 @@ public class Area {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long auid;
 
-    @Column(name = "area_name", nullable = false, length = 100)
-    private String areaName;
+    private String region;
+
+    private String sig;
 
     @OneToMany(mappedBy = "area", cascade = CascadeType.ALL)
     private List<TravelRoot> travelRoots = new ArrayList<>();
 
     @OneToMany(mappedBy = "area", cascade = CascadeType.ALL)
     private List<TravelArea> travelAreas = new ArrayList<>();
+
+    @OneToMany(mappedBy = "area", cascade = CascadeType.ALL)
+    private List<Place> places = new ArrayList<>();
 }

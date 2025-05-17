@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "Users")
+@Table(name = "users")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -27,33 +27,34 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long uuid;
 
-    @Column(nullable = false, length = 50, unique = true, updatable = false)
     private String id;
 
-    @Column(nullable = false, length = 100)
     private String password;
 
-    @Column(nullable = false, length = 50)
     private String name;
 
-    @Column(nullable = false, length = 50, unique = true)
-    private String nickname;
+    private Integer age;
+
+    private String gender;
 
     @Column(nullable = false)
+    private String nickname;
+
     private LocalDate birthday;
 
-    @Column(nullable = false, length = 100)
     private String address;
 
-    @Column(nullable = false, length = 20, unique = true)
     private String phone;
 
-    @Column(name = "profile_image", length = 255)
+    @Column(name = "profile_image")
     private String profileImage;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 10)
     private Role role;
+
+    @Column(name = "notion_page_id")
+    private String notionPageId;
 
     @CreationTimestamp
     private LocalDateTime created;
@@ -66,6 +67,9 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<TravelImage> travelImages = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<UserLike> userLikes = new ArrayList<>();
 
     public enum Role {
         ADMIN, USER

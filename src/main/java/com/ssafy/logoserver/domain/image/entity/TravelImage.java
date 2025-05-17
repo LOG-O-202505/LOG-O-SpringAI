@@ -1,5 +1,6 @@
 package com.ssafy.logoserver.domain.image.entity;
 
+import com.ssafy.logoserver.domain.travel.entity.Verification;
 import com.ssafy.logoserver.domain.user.entity.User;
 import com.ssafy.logoserver.domain.travel.entity.Travel;
 import jakarta.persistence.*;
@@ -27,6 +28,10 @@ public class TravelImage {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "travel_id", nullable = false)
     private Travel travel;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "verification_id", nullable = false)
+    private Verification verification;
 
     @Column(length = 100)
     private String name;

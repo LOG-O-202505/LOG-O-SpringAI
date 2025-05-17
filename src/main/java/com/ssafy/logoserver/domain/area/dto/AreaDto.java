@@ -17,13 +17,17 @@ public class AreaDto {
     @Schema(description = "지역 ID", example = "1")
     private Long auid;
 
-    @Schema(description = "지역 이름", example = "서울", required = true)
-    private String areaName;
+    @Schema(description = "시/도", example = "서울특별시", required = true)
+    private String region;
+
+    @Schema(description = "시/군/구", example = "성남시 중원구", required = true)
+    private String sig;
 
     public static AreaDto fromEntity(Area area) {
         return AreaDto.builder()
                 .auid(area.getAuid())
-                .areaName(area.getAreaName())
+                .region(area.getRegion())
+                .sig(area.getSig())
                 .build();
     }
 }
