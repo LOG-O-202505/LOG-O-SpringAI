@@ -18,10 +18,10 @@ public class AreaDto {
     private Long auid;
 
     @Schema(description = "시/도", example = "서울특별시", required = true)
-    private String region;
+    private Long region;
 
     @Schema(description = "시/군/구", example = "성남시 중원구", required = true)
-    private String sig;
+    private Long sig;
 
     public static AreaDto fromEntity(Area area) {
         return AreaDto.builder()
