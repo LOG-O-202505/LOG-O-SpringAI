@@ -38,12 +38,12 @@ public class AreaService {
     }
 
     /**
-     * 특정 지역 조회 (지역명으로 모든 시/군/구 조회)
+     * 특정 지역 조회 (지역 코드로 모든 시/군/구 코드 조회)
      */
-    public List<AreaDto> getSigsByRegion(String region) {
-        List<Area> areas = areaRepository.findSigsByRegion(region);
+    public List<AreaDto> getSigsByRegion(Long regionCode) {
+        List<Area> areas = areaRepository.findSigsByRegion(regionCode);
         if(areas == null) {
-            throw new IllegalArgumentException("해당 지역이 존재하지 않습니다: " + region);
+            throw new IllegalArgumentException("해당 코드의 지역이 존재하지 않습니다: " + regionCode);
         }
         return areas.stream()
                 .map(AreaDto::fromEntity)
@@ -53,9 +53,9 @@ public class AreaService {
     /**
      * 특정 지역 조회 (시/군/구 명으로 지역명 조회)
      */
-    public AreaDto getRegionBySig(String sig) {
-        Area area = areaRepository.findRegionBySig(sig)
-                .orElseThrow(() -> new IllegalArgumentException("해당 지역이 존재하지 않습니다: " + sig));
+    public AreaDto getRegionBySig(Long sigCode) {
+        Area area = areaRepository.findRegionBySig(sigCode)
+                .orElseThrow(() -> new IllegalArgumentException("해당 지역이 존재하지 않습니다: " + sigCode));
         return AreaDto.fromEntity(area);
     }
 

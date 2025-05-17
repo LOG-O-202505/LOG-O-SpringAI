@@ -23,9 +23,9 @@ public class Area {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long auid;
 
-    private String region;
+    private Long region;
 
-    private String sig;
+    private Long sig;
 
     @OneToMany(mappedBy = "area", cascade = CascadeType.ALL)
     private List<TravelRoot> travelRoots = new ArrayList<>();

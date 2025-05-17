@@ -7,6 +7,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface AreaRepository extends JpaRepository<Area, Long> {
-    List<Area> findSigsByRegion(String region);
-    Optional<Area> findRegionBySig(String sig);
+    List<Area> findSigsByRegion(Long regionCode);
+    Optional<Area> findRegionBySig(Long sigCode);
 }

@@ -52,34 +52,34 @@ public class AreaController {
         }
     }
 
-    @GetMapping("/name/{regionName}")
-    @Operation(summary = "지역명으로 해당 지역 시/군/구 조회", description = "지역명으로 특정 지역의 시/군/구 목록을 조회합니다.")
+    @GetMapping("/name/{regionCode}")
+    @Operation(summary = "지역 코드로 해당 지역 시/군/구 조회", description = "지역 코드로 특정 지역의 시/군/구 목록을 조회합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공"),
             @ApiResponse(responseCode = "404", description = "지역을 찾을 수 없음", content = @Content)
     })
     public ResponseEntity<Map<String, Object>> getSigsByRegion(
-            @Parameter(description = "지역명", required = true)
-            @PathVariable String regionName) {
+            @Parameter(description = "지역 코드", required = true)
+            @PathVariable Long regionCode) {
         try {
-            List<AreaDto> areas = areaService.getSigsByRegion(regionName);
+            List<AreaDto> areas = areaService.getSigsByRegion(regionCode);
             return ResponseUtil.success(areas);
         } catch (IllegalArgumentException e) {
             return ResponseUtil.notFound(e.getMessage());
         }
     }
 
-    @GetMapping("/name/{sigName}")
-    @Operation(summary = "시/군/구 명으로 해당 지역명 조회", description = "시/군/구 명으로 해당 지역명을 조회합니다.")
+    @GetMapping("/name/{sigCode}")
+    @Operation(summary = "시/군/구 코드로 해당 지역 코드 조회", description = "시/군/구 코드로 해당 지역 코드를 조회합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공"),
             @ApiResponse(responseCode = "404", description = "지역을 찾을 수 없음", content = @Content)
     })
     public ResponseEntity<Map<String, Object>> getRegionBySig(
-            @Parameter(description = "시/군/구명", required = true)
-            @PathVariable String sigName) {
+            @Parameter(description = "시/군/구 코드", required = true)
+            @PathVariable Long sigCode) {
         try {
-            AreaDto area = areaService.getRegionBySig(sigName);
+            AreaDto area = areaService.getRegionBySig(sigCode);
             return ResponseUtil.success(area);
         } catch (IllegalArgumentException e) {
             return ResponseUtil.notFound(e.getMessage());
