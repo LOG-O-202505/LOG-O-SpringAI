@@ -21,30 +21,46 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * 모든 유저 조회
+     * */
     public List<UserDto> getAllUsers() {
         return userRepository.findAll().stream()
                 .map(UserDto::fromEntity)
                 .collect(Collectors.toList());
     }
 
-    public UserDto getUserById(Long uuid) {
+    /**
+     * uuid(유저 고유 id)로 유저 조회
+     * */
+    public UserDto getUserByUid(Long uuid) {
         User user = userRepository.findByUuid(uuid)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자가 존재하지 않습니다: " + uuid));
         return UserDto.fromEntity(user);
     }
 
+    /**
+     * id로 유저 조회
+     * */
     public UserDto getUserByLoginId(String id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자 ID가 존재하지 않습니다: " + id));
         return UserDto.fromEntity(user);
     }
 
+
+    /**
+     * 닉네임으로 유저 조회
+     * */
     public UserDto getUserByNickname(String nickname) {
         User user = userRepository.findByNickname(nickname)
                 .orElseThrow(() -> new IllegalArgumentException("해당 닉네임의 사용자가 존재하지 않습니다: " + nickname));
         return UserDto.fromEntity(user);
     }
 
+    /**
+     * 회원 가입
+     * */
     @Transactional
     public UserDto createUser(UserRequestDto userRequestDto) {
         // ID 중복 체크
@@ -75,6 +91,9 @@ public class UserService {
         return UserDto.fromEntity(userRepository.save(user));
     }
 
+    /**
+     * 유저 정보 수정
+     * */
     @Transactional
     public UserDto updateUser(Long uuid, UserRequestDto userRequestDto) {
         User user = userRepository.findByUuid(uuid)
@@ -122,11 +141,18 @@ public class UserService {
         return UserDto.fromEntity(userRepository.save(updatedUser));
     }
 
+    /**
+     * 유저 삭제 (회원 탈퇴)
+     * */
     @Transactional
     public void deleteUser(Long uuid) {
         User user = userRepository.findByUuid(uuid)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자가 존재하지 않습니다: " + uuid));
 
         userRepository.delete(user);
+    }
+
+    public boolean existsByNickname(String nickname) {
+        return userRepository.existsByNickname(nickname);
     }
 }
