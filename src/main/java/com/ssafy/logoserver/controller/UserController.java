@@ -46,7 +46,7 @@ public class UserController {
             @Parameter(description = "사용자 UUID", required = true)
             @PathVariable Long uuid) {
         try {
-            UserDto user = userService.getUserById(uuid);
+            UserDto user = userService.getUserByUid(uuid);
             return ResponseUtil.success(user);
         } catch (IllegalArgumentException e) {
             return ResponseUtil.notFound(e.getMessage());
@@ -85,6 +85,19 @@ public class UserController {
         } catch (IllegalArgumentException e) {
             return ResponseUtil.notFound(e.getMessage());
         }
+    }
+
+    @GetMapping("/exists/{nickname}")
+    @Operation(summary = "닉네임 중복 체크", description = "해당 닉네임이 이미 존재하는지 확인합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음", content = @Content)
+    })
+    public ResponseEntity<Map<String, Boolean>> existUserNicknameByNickname(
+            @Parameter(description = "사용자 닉네임", required = true)
+            @PathVariable String nickname) {
+        boolean exists = userService.existsByNickname(nickname);
+        return ResponseEntity.ok(Map.of("exists", exists));
     }
 
     @PostMapping
@@ -152,4 +165,5 @@ public class UserController {
             return ResponseUtil.internalServerError("사용자 삭제 중 오류가 발생했습니다: " + e.getMessage());
         }
     }
+
 }
