@@ -10,6 +10,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @NoArgsConstructor
@@ -42,8 +45,17 @@ public class TravelDto {
     @Schema(description = "여행 계절", example = "봄")
     private String season;
 
+    @Schema(description = "여행 메모", example = "즐거운 제주도 여행")
+    private String memo;
+
+    @Schema(description = "총 예산", example = "1000000")
+    private Integer totalBudget;
+
     @Schema(description = "생성일시")
     private LocalDateTime created;
+
+    @Schema(description = "여행 경로 목록")
+    private List<TravelRootDto> travelRoots;
 
     public static TravelDto fromEntity(Travel travel) {
         return TravelDto.builder()
@@ -55,7 +67,30 @@ public class TravelDto {
                 .endDate(travel.getEndDate())
                 .peoples(travel.getPeoples())
                 .season(travel.getSeason())
+                .memo(travel.getMemo())
+                .totalBudget(travel.getTotalBudget())
                 .created(travel.getCreated())
+                .build();
+    }
+
+    public static TravelDto fromEntityWithRoots(Travel travel) {
+        List<TravelRootDto> rootDtos = travel.getTravelRoots().stream()
+                .map(TravelRootDto::fromEntity)
+                .collect(Collectors.toList());
+
+        return TravelDto.builder()
+                .tuid(travel.getTuid())
+                .userId(travel.getUser().getUuid())
+                .location(travel.getLocation())
+                .title(travel.getTitle())
+                .startDate(travel.getStartDate())
+                .endDate(travel.getEndDate())
+                .peoples(travel.getPeoples())
+                .season(travel.getSeason())
+                .memo(travel.getMemo())
+                .totalBudget(travel.getTotalBudget())
+                .created(travel.getCreated())
+                .travelRoots(rootDtos)
                 .build();
     }
 
@@ -68,6 +103,8 @@ public class TravelDto {
                 .endDate(endDate)
                 .peoples(peoples)
                 .season(season)
+                .memo(memo)
+                .totalBudget(totalBudget)
                 .build();
     }
 }

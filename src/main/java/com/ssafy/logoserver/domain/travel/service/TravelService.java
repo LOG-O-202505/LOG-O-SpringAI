@@ -32,12 +32,30 @@ public class TravelService {
     }
 
     /**
+     * 모든 여행 목록 조회 (연관 데이터 포함)
+     */
+    public List<TravelDto> getAllTravelsWithDetails() {
+        return travelRepository.findAll().stream()
+                .map(TravelDto::fromEntityWithRoots)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * 특정 여행 조회
      */
     public TravelDto getTravelById(Long tuid) {
         Travel travel = travelRepository.findById(tuid)
                 .orElseThrow(() -> new IllegalArgumentException("해당 여행이 존재하지 않습니다: " + tuid));
         return TravelDto.fromEntity(travel);
+    }
+
+    /**
+     * 특정 여행 조회 (연관 데이터 포함)
+     */
+    public TravelDto getTravelByIdWithDetails(Long tuid) {
+        Travel travel = travelRepository.findById(tuid)
+                .orElseThrow(() -> new IllegalArgumentException("해당 여행이 존재하지 않습니다: " + tuid));
+        return TravelDto.fromEntityWithRoots(travel);
     }
 
     /**
@@ -57,6 +75,15 @@ public class TravelService {
      */
     public List<TravelDto> getTravelsByLocation(String location) {
         return travelRepository.findByLocation(location).stream()
+                .map(TravelDto::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 여행 제목으로 여행 목록 조회
+     */
+    public List<TravelDto> getTravelsByTitle(String title) {
+        return travelRepository.findByTitleContaining(title).stream()
                 .map(TravelDto::fromEntity)
                 .collect(Collectors.toList());
     }
@@ -96,6 +123,8 @@ public class TravelService {
                 .endDate(travelDto.getEndDate() != null ? travelDto.getEndDate() : travel.getEndDate())
                 .peoples(travelDto.getPeoples() != null ? travelDto.getPeoples() : travel.getPeoples())
                 .season(travelDto.getSeason() != null ? travelDto.getSeason() : travel.getSeason())
+                .memo(travelDto.getMemo() != null ? travelDto.getMemo() : travel.getMemo())
+                .totalBudget(travelDto.getTotalBudget() != null ? travelDto.getTotalBudget() : travel.getTotalBudget())
                 .created(travel.getCreated())
                 .travelRoots(travel.getTravelRoots())
                 .travelAreas(travel.getTravelAreas())

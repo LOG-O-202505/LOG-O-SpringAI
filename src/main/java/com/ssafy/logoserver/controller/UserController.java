@@ -1,7 +1,12 @@
 package com.ssafy.logoserver.controller;
 
+import com.ssafy.logoserver.domain.image.dto.TravelImageDto;
+import com.ssafy.logoserver.domain.image.service.TravelImageService;
+import com.ssafy.logoserver.domain.travel.dto.TravelDto;
+import com.ssafy.logoserver.domain.travel.service.TravelService;
 import com.ssafy.logoserver.domain.user.dto.UserDto;
 import com.ssafy.logoserver.domain.user.dto.UserRequestDto;
+import com.ssafy.logoserver.domain.user.service.UserLikeService;
 import com.ssafy.logoserver.domain.user.service.UserService;
 import com.ssafy.logoserver.utils.ResponseUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,6 +17,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,11 +30,16 @@ import java.util.Map;
 public class UserController {
 
     private final UserService userService;
+    private final TravelService travelService;
+    private final TravelImageService travelImageService;
+    private final UserLikeService userLikeService;
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "모든 사용자 조회", description = "시스템에 등록된 모든 사용자 정보를 조회합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "403", description = "권한 없음", content = @Content),
             @ApiResponse(responseCode = "500", description = "서버 오류", content = @Content)
     })
     public ResponseEntity<Map<String, Object>> getAllUsers() {
@@ -87,11 +98,62 @@ public class UserController {
         }
     }
 
-    @GetMapping("/exists/{nickname}")
-    @Operation(summary = "닉네임 중복 체크", description = "해당 닉네임이 이미 존재하는지 확인합니다.")
+    @GetMapping("/{uuid}/travels")
+    @Operation(summary = "사용자의 여행 목록 조회", description = "특정 사용자가 작성한 모든 여행 정보를 조회합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공"),
             @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음", content = @Content)
+    })
+    public ResponseEntity<Map<String, Object>> getUserTravels(
+            @Parameter(description = "사용자 UUID", required = true)
+            @PathVariable Long uuid) {
+        try {
+            UserDto user = userService.getUserByUid(uuid);
+            List<TravelDto> travels = travelService.getTravelsByUserId(user.getId());
+            return ResponseUtil.success(travels);
+        } catch (IllegalArgumentException e) {
+            return ResponseUtil.notFound(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{uuid}/images")
+    @Operation(summary = "사용자의 여행 이미지 목록 조회", description = "특정 사용자가 업로드한 모든 여행 이미지를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음", content = @Content)
+    })
+    public ResponseEntity<Map<String, Object>> getUserImages(
+            @Parameter(description = "사용자 UUID", required = true)
+            @PathVariable Long uuid) {
+        try {
+            List<TravelImageDto> images = travelImageService.getTravelImagesByUserId(uuid);
+            return ResponseUtil.success(images);
+        } catch (IllegalArgumentException e) {
+            return ResponseUtil.notFound(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{uuid}/liked-travels")
+    @Operation(summary = "사용자가 좋아요한 여행 목록 조회", description = "특정 사용자가 좋아요한 모든 여행 정보를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음", content = @Content)
+    })
+    public ResponseEntity<Map<String, Object>> getUserLikedTravels(
+            @Parameter(description = "사용자 UUID", required = true)
+            @PathVariable Long uuid) {
+        try {
+            List<TravelDto> likedTravels = userLikeService.getLikedTravelsByUserId(uuid);
+            return ResponseUtil.success(likedTravels);
+        } catch (IllegalArgumentException e) {
+            return ResponseUtil.notFound(e.getMessage());
+        }
+    }
+
+    @GetMapping("/exists/{nickname}")
+    @Operation(summary = "닉네임 중복 체크", description = "해당 닉네임이 이미 존재하는지 확인합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공")
     })
     public ResponseEntity<Map<String, Boolean>> existUserNicknameByNickname(
             @Parameter(description = "사용자 닉네임", required = true)
@@ -100,31 +162,13 @@ public class UserController {
         return ResponseEntity.ok(Map.of("exists", exists));
     }
 
-    @PostMapping
-    @Operation(summary = "사용자 등록", description = "새로운 사용자를 등록합니다.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "등록 성공"),
-            @ApiResponse(responseCode = "400", description = "잘못된 요청", content = @Content),
-            @ApiResponse(responseCode = "500", description = "서버 오류", content = @Content)
-    })
-    public ResponseEntity<Map<String, Object>> createUser(
-            @Parameter(description = "사용자 정보", required = true)
-            @RequestBody UserRequestDto userRequestDto) {
-        try {
-            UserDto createdUser = userService.createUser(userRequestDto);
-            return ResponseUtil.success(createdUser);
-        } catch (IllegalArgumentException e) {
-            return ResponseUtil.badRequest(e.getMessage());
-        } catch (Exception e) {
-            return ResponseUtil.internalServerError("사용자 생성 중 오류가 발생했습니다: " + e.getMessage());
-        }
-    }
-
     @PutMapping("/{uuid}")
+    @PreAuthorize("@userSecurity.isCurrentUser(#uuid) or hasRole('ADMIN')")
     @Operation(summary = "사용자 정보 수정", description = "UUID로 특정 사용자의 정보를 수정합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "수정 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청", content = @Content),
+            @ApiResponse(responseCode = "403", description = "권한 없음", content = @Content),
             @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음", content = @Content),
             @ApiResponse(responseCode = "500", description = "서버 오류", content = @Content)
     })
@@ -147,9 +191,11 @@ public class UserController {
     }
 
     @DeleteMapping("/{uuid}")
+    @PreAuthorize("@userSecurity.isCurrentUser(#uuid) or hasRole('ADMIN')")
     @Operation(summary = "사용자 삭제", description = "UUID로 특정 사용자를 삭제합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "삭제 성공"),
+            @ApiResponse(responseCode = "403", description = "권한 없음", content = @Content),
             @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음", content = @Content),
             @ApiResponse(responseCode = "500", description = "서버 오류", content = @Content)
     })
@@ -165,5 +211,4 @@ public class UserController {
             return ResponseUtil.internalServerError("사용자 삭제 중 오류가 발생했습니다: " + e.getMessage());
         }
     }
-
 }
