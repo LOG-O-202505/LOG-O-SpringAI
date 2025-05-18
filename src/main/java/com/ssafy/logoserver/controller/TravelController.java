@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,8 +34,15 @@ public class TravelController {
             @ApiResponse(responseCode = "200", description = "조회 성공"),
             @ApiResponse(responseCode = "500", description = "서버 오류", content = @Content)
     })
-    public ResponseEntity<Map<String, Object>> getAllTravels() {
-        List<TravelDto> travels = travelService.getAllTravels();
+    public ResponseEntity<Map<String, Object>> getAllTravels(
+            @Parameter(description = "상세 정보 포함 여부", example = "false")
+            @RequestParam(required = false, defaultValue = "false") boolean details) {
+        List<TravelDto> travels;
+        if (details) {
+            travels = travelService.getAllTravelsWithDetails();
+        } else {
+            travels = travelService.getAllTravels();
+        }
         return ResponseUtil.success(travels);
     }
 
@@ -46,9 +54,16 @@ public class TravelController {
     })
     public ResponseEntity<Map<String, Object>> getTravelById(
             @Parameter(description = "여행 ID", required = true)
-            @PathVariable Long tuid) {
+            @PathVariable Long tuid,
+            @Parameter(description = "상세 정보 포함 여부", example = "false")
+            @RequestParam(required = false, defaultValue = "false") boolean details) {
         try {
-            TravelDto travel = travelService.getTravelById(tuid);
+            TravelDto travel;
+            if (details) {
+                travel = travelService.getTravelByIdWithDetails(tuid);
+            } else {
+                travel = travelService.getTravelById(tuid);
+            }
             return ResponseUtil.success(travel);
         } catch (IllegalArgumentException e) {
             return ResponseUtil.notFound(e.getMessage());
@@ -84,23 +99,34 @@ public class TravelController {
         return ResponseUtil.success(travels);
     }
 
+    @GetMapping("/title/{title}")
+    @Operation(summary = "제목별 여행 조회", description = "제목에 특정 키워드가 포함된 모든 여행 정보를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공")
+    })
+    public ResponseEntity<Map<String, Object>> getTravelsByTitle(
+            @Parameter(description = "여행 제목 키워드", required = true)
+            @PathVariable String title) {
+        List<TravelDto> travels = travelService.getTravelsByTitle(title);
+        return ResponseUtil.success(travels);
+    }
+
     @PostMapping
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "여행 등록", description = "새로운 여행을 등록합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "등록 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청", content = @Content),
+            @ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
             @ApiResponse(responseCode = "500", description = "서버 오류", content = @Content)
     })
     public ResponseEntity<Map<String, Object>> createTravel(
             @Parameter(description = "여행 정보", required = true)
             @RequestBody TravelDto travelDto) {
         try {
-            // 현재 로그인한 사용자의 아이디를 가져옴 (로그인 구현 전이라 잠시 주석 처리)
-//            String currentUserId = SecurityUtil.getCurrentUserId();
-
-            String currentUserId = userService.getUserById(travelDto.getUserId()).getId();
+            String currentUserId = SecurityUtil.getCurrentUserId();
             if (currentUserId == null) {
-                return ResponseUtil.badRequest("로그인이 필요합니다.");
+                return ResponseUtil.error(org.springframework.http.HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
             }
 
             TravelDto createdTravel = travelService.createTravel(travelDto, currentUserId);
@@ -113,11 +139,13 @@ public class TravelController {
     }
 
     @PutMapping("/{tuid}")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "여행 정보 수정", description = "ID로 특정 여행의 정보를 수정합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "수정 성공"),
-            @ApiResponse(responseCode = "404", description = "여행을 찾을 수 없음", content = @Content),
+            @ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
             @ApiResponse(responseCode = "403", description = "권한 없음", content = @Content),
+            @ApiResponse(responseCode = "404", description = "여행을 찾을 수 없음", content = @Content),
             @ApiResponse(responseCode = "500", description = "서버 오류", content = @Content)
     })
     public ResponseEntity<Map<String, Object>> updateTravel(
@@ -126,12 +154,9 @@ public class TravelController {
             @Parameter(description = "수정할 여행 정보", required = true)
             @RequestBody TravelDto travelDto) {
         try {
-            // 현재 로그인한 사용자의 아이디를 가져옴 (로그인 구현 전이라 잠시 주석 처리)
-//            String currentUserId = SecurityUtil.getCurrentUserId();
-
-            String currentUserId = userService.getUserById(travelDto.getUserId()).getId();
+            String currentUserId = SecurityUtil.getCurrentUserId();
             if (currentUserId == null) {
-                return ResponseUtil.badRequest("로그인이 필요합니다.");
+                return ResponseUtil.error(org.springframework.http.HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
             }
 
             TravelDto updatedTravel = travelService.updateTravel(tuid, travelDto, currentUserId);
@@ -147,23 +172,22 @@ public class TravelController {
     }
 
     @DeleteMapping("/{tuid}")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "여행 삭제", description = "ID로 특정 여행을 삭제합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "삭제 성공"),
-            @ApiResponse(responseCode = "404", description = "여행을 찾을 수 없음", content = @Content),
+            @ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
             @ApiResponse(responseCode = "403", description = "권한 없음", content = @Content),
+            @ApiResponse(responseCode = "404", description = "여행을 찾을 수 없음", content = @Content),
             @ApiResponse(responseCode = "500", description = "서버 오류", content = @Content)
     })
     public ResponseEntity<Map<String, Object>> deleteTravel(
             @Parameter(description = "여행 ID", required = true)
             @PathVariable Long tuid) {
         try {
-            // 현재 로그인한 사용자의 아이디를 가져옴 (로그인 구현 전이라 잠시 주석 처리)
-//            String currentUserId = SecurityUtil.getCurrentUserId();
-
-            String currentUserId = userService.getUserById(travelService.getTravelById(tuid).getUserId()).getId();
+            String currentUserId = SecurityUtil.getCurrentUserId();
             if (currentUserId == null) {
-                return ResponseUtil.badRequest("로그인이 필요합니다.");
+                return ResponseUtil.error(org.springframework.http.HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
             }
 
             travelService.deleteTravel(tuid, currentUserId);

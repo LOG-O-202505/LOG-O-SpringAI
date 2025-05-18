@@ -11,4 +11,5 @@ public interface TravelRepository extends JpaRepository<Travel, Long> {
     List<Travel> findByUser(User user);
     List<Travel> findByUserAndStartDateGreaterThanEqual(User user, LocalDate date);
     List<Travel> findByLocation(String location);
+    List<Travel> findByTitleContaining(String title);
 }

@@ -76,7 +76,11 @@ spring:
             scope:
               - email
               - profile
-
+  mvc:
+    static-path-pattern: /**
+  web:
+    resources:
+      static-locations: classpath:/static/
 # JWT 설정
 jwt:
   secret: ${JWT_SECRET}
