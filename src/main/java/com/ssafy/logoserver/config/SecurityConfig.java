@@ -3,8 +3,10 @@ package com.ssafy.logoserver.config;
 import com.ssafy.logoserver.security.jwt.JwtFilter;
 import com.ssafy.logoserver.security.jwt.JwtTokenProvider;
 import com.ssafy.logoserver.security.jwt.TokenRotationService;
-import com.ssafy.logoserver.security.oauth.CustomSuccessHandler;
-import com.ssafy.logoserver.security.oauth.service.CustomOAuth2UserService;
+import com.ssafy.logoserver.security.oauth2.CustomOAuth2UserService;
+import com.ssafy.logoserver.security.oauth2.HttpCookieOAuth2AuthorizationRequestRepository;
+import com.ssafy.logoserver.security.oauth2.OAuth2AuthenticationFailureHandler;
+import com.ssafy.logoserver.security.oauth2.OAuth2AuthenticationSuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,7 +34,9 @@ public class SecurityConfig {
     private final JwtTokenProvider jwtTokenProvider;
     private final TokenRotationService tokenRotationService;
     private final CustomOAuth2UserService customOAuth2UserService;
-    private final CustomSuccessHandler customSuccessHandler;
+    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+    private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
+    private final HttpCookieOAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -65,12 +69,17 @@ public class SecurityConfig {
         http
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-        //OAuth 2.0 로그인 방식 설정
+        // OAuth2 로그인 설정
         http
-                .oauth2Login((oauth2) -> oauth2
-                        .userInfoEndpoint((userInfoEndpointConfig) -> userInfoEndpointConfig
+                .oauth2Login(oauth2 -> oauth2
+                        // 기본 엔드포인트를 사용하므로 authorizationEndpoint 설정이 선택적
+                        .authorizationEndpoint(endpoint -> endpoint
+                                .authorizationRequestRepository(httpCookieOAuth2AuthorizationRequestRepository))
+                        // 기본 리다이렉트 엔드포인트를 사용하므로 redirectionEndpoint 설정 불필요
+                        .userInfoEndpoint(endpoint -> endpoint
                                 .userService(customOAuth2UserService))
-                        .successHandler(customSuccessHandler)
+                        .successHandler(oAuth2AuthenticationSuccessHandler)
+                        .failureHandler(oAuth2AuthenticationFailureHandler)
                 );
 
 

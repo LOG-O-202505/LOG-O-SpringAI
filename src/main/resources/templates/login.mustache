@@ -1,29 +1,41 @@
 <!-- src/main/resources/templates/login.mustache -->
 {{> layout/default}}
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="mb-0">Login</h4>
-                </div>
-                <div class="card-body">
-                    <form id="login-form">
-                        <div class="form-group">
-                            <label for="id">ID</label>
-                            <input type="text" class="form-control" id="id" name="id" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="password">Password</label>
-                            <input type="password" class="form-control" id="password" name="password" required>
-                        </div>
-                        <div class="alert alert-danger d-none" id="login-error"></div>
-                        <button type="submit" class="btn btn-primary">Login</button>
-                    </form>
-                    <div class="mt-3">
-                        <p>Don't have an account? <a href="/signup">Sign up</a></p>
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Login</h4>
+            </div>
+            <div class="card-body">
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="id">ID</label>
+                        <input type="text" class="form-control" id="id" name="id" required>
                     </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="alert alert-danger d-none" id="login-error"></div>
+                    <button type="submit" class="btn btn-primary btn-block">Login</button>
+                </form>
+
+                <div class="mt-3">
+                    <p class="text-center">OR</p>
+                    <button id="login-with-google" class="btn btn-danger btn-block">
+                        <i class="fas fa-google mr-2"></i> Login with Google
+                    </button>
+                    <button id="login-with-naver" class="btn btn-success btn-block mt-2">
+                        <i class="fas fa-n mr-2"></i> Login with Naver
+                    </button>
+                </div>
+
+                <div class="mt-3">
+                    <p>Don't have an account? <a href="/signup">Sign up</a></p>
                 </div>
             </div>
         </div>
     </div>
-    <script src="/js/main.js"></script>
+</div>
+<script src="/js/main.js"></script>
+<script src="/js/oauth2-handler.js"></script>

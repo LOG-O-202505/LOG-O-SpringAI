@@ -76,7 +76,7 @@ spring:
           google:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
-            redirect-uri: ${BASE_URL}/login/oauth2/code/google
+            redirect-uri: "http://localhost:8080/login/oauth2/code/google"
             scope:
               - email
               - profile
@@ -93,6 +93,10 @@ jwt:
 
 # 애플리케이션 도메인 설정 (쿠키에 사용)
 app:
+#  oauth2:
+#    authorized-redirect-uris:
+#      - http://localhost:3000/oauth2/redirect
+#      - http://localhost:8080/oauth2/redirect
   domain: ${APP_DOMAIN:localhost}
 
 # 로깅 설정

@@ -2,6 +2,7 @@ package com.ssafy.logoserver.controller;
 
 import com.ssafy.logoserver.domain.user.dto.*;
 import com.ssafy.logoserver.domain.user.service.UserService;
+import com.ssafy.logoserver.security.jwt.JwtTokenProvider;
 import com.ssafy.logoserver.security.jwt.TokenRotationService;
 import com.ssafy.logoserver.utils.ResponseUtil;
 import com.ssafy.logoserver.utils.SecurityUtil;
@@ -23,9 +24,11 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -38,6 +41,7 @@ public class AuthController {
     private final UserService userService;
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final TokenRotationService tokenRotationService;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @PostMapping("/login")
     @Operation(summary = "로그인", description = "사용자 ID와 비밀번호로 로그인합니다.")
@@ -172,5 +176,44 @@ public class AuthController {
     public ResponseEntity<Map<String, Object>> validateToken() {
         // 인증되어 있다면 200 OK 반환
         return ResponseUtil.success();
+    }
+
+    @GetMapping("/oauth2/status")
+    @Operation(summary = "OAuth2 로그인 상태 확인", description = "현재 OAuth2 로그인 상태를 확인합니다.")
+    public ResponseEntity<Map<String, Object>> getOAuth2LoginStatus(HttpServletRequest request) {
+        // 토큰 확인을 통해 로그인 상태 판단
+        String token = getTokenFromRequest(request);
+        if (token != null && jwtTokenProvider.validateToken(token)) {
+            Authentication authentication = jwtTokenProvider.getAuthentication(token);
+            String currentUserId = authentication.getName();
+
+            try {
+                UserDto user = userService.getUserByLoginId(currentUserId);
+
+                // OAuth2 로그인 된 사용자인지 확인
+                boolean isOAuth2User = user.getId() != null &&
+                        (user.getId().startsWith("google_") || user.getId().startsWith("naver_"));
+
+                Map<String, Object> statusData = new HashMap<>();
+                statusData.put("authenticated", true);
+                statusData.put("oauth2User", isOAuth2User);
+                statusData.put("provider", isOAuth2User ? user.getId().split("_")[0] : null);
+                statusData.put("userInfo", user);
+
+                return ResponseUtil.success(statusData);
+            } catch (Exception e) {
+                return ResponseUtil.error(HttpStatus.INTERNAL_SERVER_ERROR, "사용자 정보 조회 중 오류가 발생했습니다.");
+            }
+        }
+
+        return ResponseUtil.success(Map.of("authenticated", false, "oauth2User", false));
+    }
+
+    private String getTokenFromRequest(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+        return null;
     }
 }
