@@ -33,6 +33,8 @@ public class User {
 
     private String name;
 
+    private String email;
+
     private Integer age;
 
     private String gender;
@@ -55,6 +57,11 @@ public class User {
 
     @Column(name = "notion_page_id")
     private String notionPageId;
+
+    private String provider;
+
+    @Column(name = "provider_id")
+    private String providerId;
 
     @CreationTimestamp
     private LocalDateTime created;

@@ -3,6 +3,8 @@ package com.ssafy.logoserver.config;
 import com.ssafy.logoserver.security.jwt.JwtFilter;
 import com.ssafy.logoserver.security.jwt.JwtTokenProvider;
 import com.ssafy.logoserver.security.jwt.TokenRotationService;
+import com.ssafy.logoserver.security.oauth.CustomSuccessHandler;
+import com.ssafy.logoserver.security.oauth.service.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,6 +31,8 @@ public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final TokenRotationService tokenRotationService;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final CustomSuccessHandler customSuccessHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -37,13 +41,40 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        //csrf 공격 방어 설정
         http
+//                .csrf(AbstractHttpConfigurer::disable);
                 // CSRF는 쿠키 사용하므로 활성화 (주의: REST API에 맞게 설정)
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers("/api/auth/login", "/api/auth/signup", "/api/auth/logout")
-                )
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                );
+
+        //cors 방지 설정
+        http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()));
+
+        //Form 로그인 방식 disable 설정
+        http
+                .formLogin(AbstractHttpConfigurer::disable);
+
+        //HTTP Basic 인증 방식 disable
+        http
+                .httpBasic(AbstractHttpConfigurer::disable);
+
+        //세션 설정
+        http
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+        //OAuth 2.0 로그인 방식 설정
+        http
+                .oauth2Login((oauth2) -> oauth2
+                        .userInfoEndpoint((userInfoEndpointConfig) -> userInfoEndpointConfig
+                                .userService(customOAuth2UserService))
+                        .successHandler(customSuccessHandler)
+                );
+
+
+        http
                 .authorizeHttpRequests(auth -> auth
                         // API 문서 접근 허용
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
@@ -62,6 +93,8 @@ public class SecurityConfig {
                         // 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated()
                 );
+
+
 
         // 커스텀 JWT 필터 추가
         http.addFilterBefore(new JwtFilter(jwtTokenProvider, tokenRotationService), UsernamePasswordAuthenticationFilter.class);
