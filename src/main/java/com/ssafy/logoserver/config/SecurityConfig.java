@@ -1,10 +1,14 @@
 package com.ssafy.logoserver.config;
 
+import com.ssafy.logoserver.domain.user.entity.User;
 import com.ssafy.logoserver.security.jwt.JwtFilter;
 import com.ssafy.logoserver.security.jwt.JwtTokenProvider;
+import com.ssafy.logoserver.security.oauth.CustomSuccessHandler;
+import com.ssafy.logoserver.security.oauth.service.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -27,6 +31,8 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final CustomSuccessHandler customSuccessHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -35,10 +41,36 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        //csrf 공격 방어 설정
         http
-                .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .csrf(AbstractHttpConfigurer::disable);
+
+        //cors 방지 설정
+        http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()));
+
+        //Form 로그인 방식 disable 설정
+        http
+                .formLogin(AbstractHttpConfigurer::disable);
+
+        //HTTP Basic 인증 방식 disable
+        http
+                .httpBasic(AbstractHttpConfigurer::disable);
+
+        //세션 설정
+        http
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+        //OAuth 2.0 로그인 방식 설정
+        http
+                .oauth2Login((oauth2) -> oauth2
+                        .userInfoEndpoint((userInfoEndpointConfig) -> userInfoEndpointConfig
+                                .userService(customOAuth2UserService))
+                        .successHandler(customSuccessHandler)
+                );
+
+        //경로별 인가 작업
+        http
                 .authorizeHttpRequests(auth -> auth
                         // API 문서 접근 허용
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
@@ -53,7 +85,7 @@ public class SecurityConfig {
                         // 나머지 API는 인증 필요
                         .requestMatchers("/api/**").authenticated()
                         // 관리자 API는 ADMIN 역할 필요
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/**").hasRole(User.Role.ADMIN.name())
                         // 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated()
                 );

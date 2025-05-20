@@ -43,13 +43,14 @@ public class AuthController {
             UsernamePasswordAuthenticationToken authenticationToken =
                     new UsernamePasswordAuthenticationToken(loginRequestDto.getId(), loginRequestDto.getPassword());
 
+            //사용자 로그인 인증 (AuthenticationManager를 통한 인증 -> 내부적으로 DB데이터와 조회하여 검증)
             Authentication authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
+            //인증된 사용자 정보를 현 스레드내 스프링 보안 context에 저장
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            String accessToken = tokenProvider.createAccessToken(authentication);
-            String refreshToken = tokenProvider.createRefreshToken(authentication);
+            //토큰 생성 (AccessToken + RefreshToken)
+            TokenDto tokenDto = tokenProvider.generateToken(authentication);
 
-            TokenDto tokenDto = new TokenDto(accessToken, refreshToken);
             return ResponseUtil.success(tokenDto);
         } catch (Exception e) {
             return ResponseUtil.error(org.springframework.http.HttpStatus.UNAUTHORIZED, "인증에 실패했습니다: " + e.getMessage());

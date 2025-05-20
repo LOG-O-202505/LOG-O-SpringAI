@@ -31,6 +31,8 @@ public class User {
 
     private String password;
 
+    private String email;
+
     private String name;
 
     private Integer age;
@@ -58,6 +60,13 @@ public class User {
 
     @CreationTimestamp
     private LocalDateTime created;
+
+    // OAuth 관련 필드 추가
+    @Column(name = "provider")
+    private String provider; // google, naver, kakao 등
+
+    @Column(name = "provider_id")
+    private String providerId; // OAuth 제공자의 고유 ID
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<Travel> travels = new ArrayList<>();

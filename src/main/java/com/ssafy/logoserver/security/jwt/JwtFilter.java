@@ -28,8 +28,12 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
+        log.info("doFilterInternal start");
+
         String jwt = resolveToken(request);
         if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
+            log.info("token: {}", jwt);
+
             Authentication authentication = tokenProvider.getAuthentication(jwt);
             SecurityContextHolder.getContext().setAuthentication(authentication);
             log.debug("set Authentication to security context for '{}', uri: {}", authentication.getName(), request.getRequestURI());
@@ -40,6 +44,10 @@ public class JwtFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+    /**
+     * Bearer 인증 타입의 토큰인지 확인
+     * 맞다면 Bearer 문자를 제외한 순수 토큰 문자열만을 반환
+     * */
     private String resolveToken(HttpServletRequest request) {
         String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
