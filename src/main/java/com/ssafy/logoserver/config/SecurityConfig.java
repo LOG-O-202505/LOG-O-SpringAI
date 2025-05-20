@@ -2,6 +2,7 @@ package com.ssafy.logoserver.config;
 
 import com.ssafy.logoserver.security.jwt.JwtFilter;
 import com.ssafy.logoserver.security.jwt.JwtTokenProvider;
+import com.ssafy.logoserver.security.jwt.TokenRotationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,6 +28,7 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final TokenRotationService tokenRotationService;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -36,7 +38,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable)
+                // CSRF는 쿠키 사용하므로 활성화 (주의: REST API에 맞게 설정)
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers("/api/auth/login", "/api/auth/signup", "/api/auth/logout")
+                )
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
@@ -58,8 +63,8 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 );
 
-        // JWT 필터 추가
-        http.addFilterBefore(new JwtFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
+        // 커스텀 JWT 필터 추가
+        http.addFilterBefore(new JwtFilter(jwtTokenProvider, tokenRotationService), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -70,7 +75,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:8080"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setAllowCredentials(true);
+        configuration.setAllowCredentials(true); // 쿠키 전송을 위해 필요
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

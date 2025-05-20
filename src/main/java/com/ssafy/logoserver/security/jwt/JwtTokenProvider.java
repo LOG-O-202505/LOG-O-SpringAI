@@ -92,4 +92,8 @@ public class JwtTokenProvider {
                 .build()
                 .parseClaimsJws(token);
     }
+
+    public long getRefreshTokenValidityInMilliseconds() {
+        return refreshTokenValidity;
+    }
 }
