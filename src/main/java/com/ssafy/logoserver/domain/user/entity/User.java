@@ -33,6 +33,8 @@ public class User {
 
     private String name;
 
+    private String email;
+
     private Integer age;
 
     private String gender;
@@ -55,6 +57,11 @@ public class User {
 
     @Column(name = "notion_page_id")
     private String notionPageId;
+
+    private String provider; // OAuth2 제공자 (google, naver 등)
+
+    @Column(name = "provider_id")
+    private String providerId; // OAuth2 제공자에서의 사용자 ID
 
     @CreationTimestamp
     private LocalDateTime created;

@@ -7,6 +7,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 public class TokenRotationService {
@@ -31,6 +34,23 @@ public class TokenRotationService {
 
         // 응답 쿠키에 리프레시 토큰 설정
         cookieProvider.addRefreshTokenCookie(response, refreshToken);
+    }
+
+    /**
+     * OAuth2 사용자 토큰 발급 (JWT 토큰 반환)
+     */
+    public Map<String, String> issueOAuth2Tokens(Authentication authentication) {
+        String userId = authentication.getName();
+        String accessToken = jwtTokenProvider.createAccessToken(authentication);
+        String refreshToken = jwtTokenProvider.createRefreshToken(authentication);
+
+        // Redis에 리프레시 토큰 저장
+        tokenStore.saveRefreshToken(userId, refreshToken, jwtTokenProvider.getRefreshTokenValidityInMilliseconds());
+
+        Map<String, String> tokens = new HashMap<>();
+        tokens.put("accessToken", accessToken);
+        tokens.put("refreshToken", refreshToken);
+        return tokens;
     }
 
     /**

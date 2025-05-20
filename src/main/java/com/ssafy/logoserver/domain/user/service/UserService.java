@@ -155,4 +155,56 @@ public class UserService {
     public boolean existsByNickname(String nickname) {
         return userRepository.existsByNickname(nickname);
     }
+
+    /**
+     * OAuth2 로그인을 처리하거나 업데이트 하는 메서드
+     */
+    @Transactional
+    public UserDto processOAuthUser(String provider, String providerId, String email, String name, String profileImage) {
+        // OAuth2 로그인 ID 생성 (provider_providerId 형식)
+        String oAuthId = provider + "_" + providerId;
+
+        Optional<User> existingUser = userRepository.findById(oAuthId);
+        User user;
+
+        if (existingUser.isPresent()) {
+            // 기존 사용자 정보 업데이트
+            user = existingUser.get();
+            // 이메일, 이름, 프로필 이미지 업데이트
+            User updatedUser = User.builder()
+                    .uuid(user.getUuid())
+                    .id(oAuthId)
+                    .password(user.getPassword())
+                    .name(name)
+                    .nickname(user.getNickname())
+                    .email(email)
+                    .birthday(user.getBirthday())
+                    .address(user.getAddress())
+                    .phone(user.getPhone())
+                    .profileImage(profileImage)
+                    .provider(provider)
+                    .providerId(providerId)
+                    .role(user.getRole())
+                    .created(user.getCreated())
+                    .build();
+
+            user = userRepository.save(updatedUser);
+        } else {
+            // 새 사용자 등록
+            User newUser = User.builder()
+                    .id(oAuthId)
+                    .name(name)
+                    .nickname(name) // 닉네임은 이름으로 초기화
+                    .email(email)
+                    .profileImage(profileImage)
+                    .provider(provider)
+                    .providerId(providerId)
+                    .role(User.Role.USER)
+                    .build();
+
+            user = userRepository.save(newUser);
+        }
+
+        return UserDto.fromEntity(user);
+    }
 }
