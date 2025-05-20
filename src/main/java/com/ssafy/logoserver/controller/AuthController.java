@@ -2,7 +2,7 @@ package com.ssafy.logoserver.controller;
 
 import com.ssafy.logoserver.domain.user.dto.*;
 import com.ssafy.logoserver.domain.user.service.UserService;
-import com.ssafy.logoserver.security.jwt.JwtTokenProvider;
+import com.ssafy.logoserver.security.jwt.TokenRotationService;
 import com.ssafy.logoserver.utils.ResponseUtil;
 import com.ssafy.logoserver.utils.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,8 +10,13 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,17 +25,19 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Enumeration;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @Tag(name = "Authentication API", description = "인증 관련 API")
+@Slf4j
 public class AuthController {
 
     private final UserService userService;
-    private final JwtTokenProvider tokenProvider;
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
+    private final TokenRotationService tokenRotationService;
 
     @PostMapping("/login")
     @Operation(summary = "로그인", description = "사용자 ID와 비밀번호로 로그인합니다.")
@@ -38,7 +45,9 @@ public class AuthController {
             @ApiResponse(responseCode = "200", description = "로그인 성공"),
             @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content)
     })
-    public ResponseEntity<Map<String, Object>> login(@Valid @RequestBody LoginRequestDto loginRequestDto) {
+    public ResponseEntity<Map<String, Object>> login(
+            @Valid @RequestBody LoginRequestDto loginRequestDto,
+            HttpServletResponse response) {
         try {
             UsernamePasswordAuthenticationToken authenticationToken =
                     new UsernamePasswordAuthenticationToken(loginRequestDto.getId(), loginRequestDto.getPassword());
@@ -46,11 +55,10 @@ public class AuthController {
             Authentication authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            String accessToken = tokenProvider.createAccessToken(authentication);
-            String refreshToken = tokenProvider.createRefreshToken(authentication);
+            // 토큰 발급 및 설정
+            tokenRotationService.issueTokens(response, authentication);
 
-            TokenDto tokenDto = new TokenDto(accessToken, refreshToken);
-            return ResponseUtil.success(tokenDto);
+            return ResponseUtil.success("로그인 성공");
         } catch (Exception e) {
             return ResponseUtil.error(org.springframework.http.HttpStatus.UNAUTHORIZED, "인증에 실패했습니다: " + e.getMessage());
         }
@@ -79,24 +87,56 @@ public class AuthController {
             @ApiResponse(responseCode = "200", description = "갱신 성공"),
             @ApiResponse(responseCode = "401", description = "토큰 검증 실패", content = @Content)
     })
-    public ResponseEntity<Map<String, Object>> refreshToken(@Valid @RequestBody TokenRefreshRequestDto tokenRefreshRequestDto) {
-        try {
-            // 리프레시 토큰 검증
-            if (!tokenProvider.validateToken(tokenRefreshRequestDto.getRefreshToken())) {
-                return ResponseUtil.error(org.springframework.http.HttpStatus.UNAUTHORIZED, "Invalid refresh token");
+    public ResponseEntity<Map<String, Object>> refreshToken(
+            HttpServletRequest request,
+            HttpServletResponse response) {
+
+        boolean rotated = tokenRotationService.rotateTokens(request, response);
+
+        if (rotated) {
+            return ResponseUtil.success("토큰이 갱신되었습니다");
+        } else {
+            return ResponseUtil.error(org.springframework.http.HttpStatus.UNAUTHORIZED, "리프레시 토큰이 유효하지 않습니다");
+        }
+    }
+
+    @PostMapping("/logout")
+    @Operation(summary = "로그아웃", description = "사용자를 로그아웃시키고 토큰을 무효화합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "로그아웃 성공")
+    })
+    public ResponseEntity<Map<String, Object>> logout(
+            HttpServletRequest request,
+            HttpServletResponse response) {
+
+        log.info("로그아웃 요청 받음");
+
+        // 쿠키 정보 로깅
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                log.info("쿠키 발견: {} = {}", cookie.getName(), "값 있음");
             }
+        } else {
+            log.info("요청에 쿠키 없음");
+        }
 
-            // 사용자 정보 추출
-            Authentication authentication = tokenProvider.getAuthentication(tokenRefreshRequestDto.getRefreshToken());
+        // Headers 정보 로깅
+        Enumeration<String> headerNames = request.getHeaderNames();
+        if (headerNames != null) {
+            while (headerNames.hasMoreElements()) {
+                String headerName = headerNames.nextElement();
+                log.info("헤더 발견: {} = {}", headerName, request.getHeader(headerName));
+            }
+        }
 
-            // 새 토큰 발급
-            String newAccessToken = tokenProvider.createAccessToken(authentication);
-            String newRefreshToken = tokenProvider.createRefreshToken(authentication);
-
-            TokenDto tokenDto = new TokenDto(newAccessToken, newRefreshToken);
-            return ResponseUtil.success(tokenDto);
+        try {
+            tokenRotationService.logout(request, response);
+            log.info("로그아웃 성공 처리됨");
+            return ResponseUtil.success("로그아웃 성공");
         } catch (Exception e) {
-            return ResponseUtil.error(org.springframework.http.HttpStatus.UNAUTHORIZED, "Failed to refresh token: " + e.getMessage());
+            log.error("로그아웃 처리 중 오류: {}", e.getMessage(), e);
+            return ResponseUtil.error(HttpStatus.INTERNAL_SERVER_ERROR, "로그아웃 처리 중 오류 발생: " + e.getMessage());
         }
     }
 
