@@ -1,6 +1,8 @@
 package com.ssafy.logoserver.security.jwt;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Service;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,6 +14,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TokenRotationService {
 
     private final JwtTokenProvider jwtTokenProvider;
@@ -22,7 +25,43 @@ public class TokenRotationService {
      * 토큰 발급 (로그인 시)
      */
     public void issueTokens(HttpServletResponse response, Authentication authentication) {
-        String userId = authentication.getName();
+        log.info("authentication: {}", authentication);
+//        String userId = authentication.getName();
+
+        // 사용자 ID 추출 로직
+        String userId;
+        if (authentication instanceof OAuth2AuthenticationToken) {
+            OAuth2AuthenticationToken oauth2Auth = (OAuth2AuthenticationToken) authentication;
+            String registrationId = oauth2Auth.getAuthorizedClientRegistrationId();
+
+            if ("naver".equalsIgnoreCase(registrationId)) {
+                // 네이버 OAuth 처리
+                Map<String, Object> attributes = oauth2Auth.getPrincipal().getAttributes();
+                Map<String, Object> res = (Map<String, Object>) attributes.get("response");
+                if (res != null && res.containsKey("id")) {
+                    userId = "naver_" + res.get("id").toString();
+                } else {
+                    log.error("Naver OAuth res does not contain id field");
+                    userId = oauth2Auth.getName(); // 백업 옵션
+                }
+            } else if ("google".equalsIgnoreCase(registrationId)) {
+                // 구글 OAuth 처리
+                Map<String, Object> attributes = oauth2Auth.getPrincipal().getAttributes();
+                if (attributes.containsKey("sub")) {
+                    userId = "google_" + attributes.get("sub").toString();
+                } else {
+                    userId = oauth2Auth.getName();
+                }
+            } else {
+                // 다른 OAuth 제공자
+                userId = oauth2Auth.getName();
+            }
+        } else {
+            // 일반 인증
+            userId = authentication.getName();
+        }
+
+        log.info("Token issued for user: {}", userId);
         String accessToken = jwtTokenProvider.createAccessToken(authentication);
         String refreshToken = jwtTokenProvider.createRefreshToken(authentication);
 

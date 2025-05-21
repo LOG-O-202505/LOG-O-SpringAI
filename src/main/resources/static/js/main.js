@@ -223,28 +223,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         return originalFetch.apply(window, args);
     };
-
-    const loginWithGoogle = document.getElementById('login-with-google');
-    if (loginWithGoogle) {
-        loginWithGoogle.addEventListener('click', function() {
-            // 현재 페이지 URL을 리다이렉트 URI로 저장 (프론트엔드용)
-            const redirectUri = window.location.origin + '/oauth2/redirect';
-            const encodedRedirectUri = encodeURIComponent(redirectUri);
-
-            // 기본 인증 엔드포인트 사용
-            window.location.href = `/oauth2/authorization/google?redirect_uri=${encodedRedirectUri}`;
-        });
-    }
-
-    // Naver 로그인 버튼도 비슷하게 수정
-    const loginWithNaver = document.getElementById('login-with-naver');
-    if (loginWithNaver) {
-        loginWithNaver.addEventListener('click', function() {
-            const redirectUri = window.location.origin + '/oauth2/redirect';
-            const encodedRedirectUri = encodeURIComponent(redirectUri);
-            window.location.href = `/oauth2/authorization/naver?redirect_uri=${encodedRedirectUri}`;
-        });
-    }
 });
 
 // 로그인 상태에 따라 UI 업데이트
