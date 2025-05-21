@@ -31,6 +31,7 @@ public class TokenRotationService {
 
         // 응답 헤더에 액세스 토큰 설정
         response.setHeader("Authorization", "Bearer " + accessToken);
+        response.setHeader("Access-Control-Expose-Headers", "Authorization"); // 이 헤더 추가
 
         // 응답 쿠키에 리프레시 토큰 설정
         cookieProvider.addRefreshTokenCookie(response, refreshToken);
