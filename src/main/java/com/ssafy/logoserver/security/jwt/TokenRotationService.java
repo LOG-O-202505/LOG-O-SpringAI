@@ -41,7 +41,7 @@ public class TokenRotationService {
                 if (res != null && res.containsKey("id")) {
                     userId = "naver_" + res.get("id").toString();
                 } else {
-                    log.error("Naver OAuth res does not contain id field");
+                    log.error("Naver OAuth response does not contain id field");
                     userId = oauth2Auth.getName(); // 백업 옵션
                 }
             } else if ("google".equalsIgnoreCase(registrationId)) {
@@ -51,6 +51,15 @@ public class TokenRotationService {
                     userId = "google_" + attributes.get("sub").toString();
                 } else {
                     userId = oauth2Auth.getName();
+                }
+            } else if ("kakao".equalsIgnoreCase(registrationId)) {
+                // 카카오 OAuth 처리
+                Map<String, Object> attributes = oauth2Auth.getPrincipal().getAttributes();
+                if (attributes.containsKey("id")) {
+                    userId = "kakao_" + attributes.get("id").toString();
+                } else {
+                    log.error("Kakao OAuth response does not contain id field");
+                    userId = oauth2Auth.getName(); // 백업 옵션
                 }
             } else {
                 // 다른 OAuth 제공자
@@ -69,10 +78,11 @@ public class TokenRotationService {
         tokenStore.saveRefreshToken(userId, refreshToken, jwtTokenProvider.getRefreshTokenValidityInMilliseconds());
 
         // 응답 헤더에 액세스 토큰 설정
-        response.setHeader("Authorization", "Bearer " + accessToken);
-        response.setHeader("Access-Control-Expose-Headers", "Authorization"); // 이 헤더 추가
+//        response.setHeader("Authorization", "Bearer " + accessToken);
+//        response.setHeader("Access-Control-Expose-Headers", "Authorization"); // 이 헤더 추가
 
         // 응답 쿠키에 리프레시 토큰 설정
+        cookieProvider.addAccessTokenCookie(response, accessToken);
         cookieProvider.addRefreshTokenCookie(response, refreshToken);
     }
 
@@ -121,7 +131,8 @@ public class TokenRotationService {
 
         // Redis 업데이트 및 응답 설정
         tokenStore.saveRefreshToken(userId, newRefreshToken, jwtTokenProvider.getRefreshTokenValidityInMilliseconds());
-        response.setHeader("Authorization", "Bearer " + newAccessToken);
+//        response.setHeader("Authorization", "Bearer " + newAccessToken);
+        cookieProvider.addAccessTokenCookie(response, newAccessToken);
         cookieProvider.addRefreshTokenCookie(response, newRefreshToken);
 
         return true;
@@ -132,11 +143,13 @@ public class TokenRotationService {
      */
     public void logout(HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = cookieProvider.getRefreshTokenFromCookies(request);
+        String accessToken = cookieProvider.getAccessTokenTokenFromCookies(request);
         if (refreshToken != null) {
             Authentication authentication = jwtTokenProvider.getAuthentication(refreshToken);
             tokenStore.deleteRefreshToken(authentication.getName());
         }
 
+        cookieProvider.deleteAccessTokenCookie(response);
         cookieProvider.deleteRefreshTokenCookie(response);
     }
 }

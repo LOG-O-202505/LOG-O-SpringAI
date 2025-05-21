@@ -24,6 +24,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // 카카오 로그인 버튼
+    const loginWithKakao = document.getElementById('login-with-kakao');
+    if (loginWithKakao) {
+        loginWithKakao.addEventListener('click', function() {
+            const redirectUri = window.location.origin + '/oauth2/redirect';
+            const encodedRedirectUri = encodeURIComponent(redirectUri);
+            window.location.href = `/oauth2/authorization/kakao?redirect_uri=${encodedRedirectUri}`;
+        });
+    }
+
     // OAuth2 리다이렉트 처리
     if (window.location.pathname.startsWith('/oauth2/redirect')) {
         // URL에서 토큰 정보 추출

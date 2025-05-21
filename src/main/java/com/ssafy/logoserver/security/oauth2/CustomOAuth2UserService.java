@@ -2,6 +2,7 @@
 package com.ssafy.logoserver.security.oauth2;
 
 import com.ssafy.logoserver.domain.user.dto.GoogleUserInfo;
+import com.ssafy.logoserver.domain.user.dto.KakaoUserInfo;
 import com.ssafy.logoserver.domain.user.dto.NaverUserInfo;
 import com.ssafy.logoserver.domain.user.dto.OAuth2UserInfo;
 import com.ssafy.logoserver.domain.user.entity.User;
@@ -34,14 +35,29 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     @Override
     @Transactional
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
-        OAuth2User oAuth2User = super.loadUser(userRequest);
+//        OAuth2User oAuth2User = super.loadUser(userRequest);
+//
+//        try {
+//            return processOAuth2User(userRequest, oAuth2User);
+//        } catch (AuthenticationException ex) {
+//            throw ex;
+//        } catch (Exception ex) {
+//            log.error("Exception occurred while processing OAuth2 user", ex);
+//            throw new InternalAuthenticationServiceException(ex.getMessage(), ex);
+//        }
+
+        String registrationId = userRequest.getClientRegistration().getRegistrationId();
+        log.info("OAuth2 Provider: {}", registrationId);
 
         try {
+            OAuth2User oAuth2User = super.loadUser(userRequest);
+            log.info("OAuth2User attributes: {}", oAuth2User.getAttributes());
             return processOAuth2User(userRequest, oAuth2User);
         } catch (AuthenticationException ex) {
+            log.error("AuthenticationException: {}", ex.getMessage());
             throw ex;
         } catch (Exception ex) {
-            log.error("Exception occurred while processing OAuth2 user", ex);
+            log.error("Exception occurred while processing OAuth2 user: {}", ex.getMessage(), ex);
             throw new InternalAuthenticationServiceException(ex.getMessage(), ex);
         }
     }
@@ -82,6 +98,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             return new GoogleUserInfo(attributes);
         } else if (registrationId.equalsIgnoreCase("naver")) {
             return new NaverUserInfo(attributes);
+        } else if (registrationId.equalsIgnoreCase("kakao")) {
+            return new KakaoUserInfo(attributes);
         } else {
             throw new OAuth2AuthenticationException("Unsupported OAuth2 provider: " + registrationId);
         }

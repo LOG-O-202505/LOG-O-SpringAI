@@ -54,10 +54,10 @@ spring:
           kakao:
             client-id: ${KAKAO_CLIENT_ID}
             client-secret: ${KAKAO_CLIENT_SECRET}
-            redirect-uri: ${BASE_URL}/login/oauth2/code/kakao
+            redirect-uri: "http://localhost:8080/login/oauth2/code/kakao"
             authorization-grant-type: authorization_code
-            client-authentication-method: POST
-            client-name: Kakao
+            client-authentication-method: client_secret_post
+            client-name: kakao
             scope:
               - profile_nickname
               - profile_image
