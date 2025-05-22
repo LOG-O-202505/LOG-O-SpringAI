@@ -28,14 +28,14 @@ public class UserRequestDto {
     @Schema(description = "닉네임", example = "길동이", required = true)
     private String nickname;
 
+    @Schema(description = "이메일", example = "user123@example.com", required = true)
+    private String email;
+
+    @Schema(description = "성별", example = "M", required = true)
+    private String gender;
+
     @Schema(description = "생년월일", example = "1990-01-01", required = true)
     private LocalDate birthday;
-
-    @Schema(description = "주소", example = "서울특별시 강남구", required = true)
-    private String address;
-
-    @Schema(description = "전화번호", example = "010-1234-5678", required = true)
-    private String phone;
 
     @Schema(description = "프로필 이미지 URL", example = "https://example.com/profile.jpg")
     private String profileImage;
@@ -48,12 +48,12 @@ public class UserRequestDto {
                 .id(id)
                 .password(password)
                 .name(name)
+                .email(email)
+                .gender(gender)
                 .nickname(nickname)
                 .birthday(birthday)
-                .address(address)
-                .phone(phone)
                 .profileImage(profileImage)
                 .role(role != null ? role : User.Role.USER)
                 .build();
     }
-}   
+}

@@ -1,44 +1,151 @@
-<!-- src/main/resources/templates/login.mustache -->
+<!-- Enhanced login.mustache -->
 {{> layout/default}}
 <div class="row justify-content-center">
     <div class="col-md-6">
         <div class="card">
             <div class="card-header">
-                <h4 class="mb-0">Login</h4>
+                <h4 class="mb-0 text-center">Welcome Back</h4>
+                <p class="text-muted text-center mb-0">Please sign in to your account</p>
             </div>
             <div class="card-body">
+                <!-- 자체 로그인 폼 -->
                 <form id="login-form">
                     <div class="form-group">
-                        <label for="id">ID</label>
-                        <input type="text" class="form-control" id="id" name="id" required>
+                        <label for="id">ID or Email</label>
+                        <input type="text" class="form-control" id="id" name="id" required
+                               placeholder="Enter your ID or email">
                     </div>
                     <div class="form-group">
                         <label for="password">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
+                        <input type="password" class="form-control" id="password" name="password" required
+                               placeholder="Enter your password">
+                    </div>
+                    <div class="form-group form-check">
+                        <input type="checkbox" class="form-check-input" id="rememberMe">
+                        <label class="form-check-label" for="rememberMe">
+                            Remember me
+                        </label>
                     </div>
                     <div class="alert alert-danger d-none" id="login-error"></div>
-                    <button type="submit" class="btn btn-primary btn-block">Login</button>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+                    </button>
                 </form>
 
-                <div class="mt-3">
-                    <p class="text-center">OR</p>
-                    <button id="login-with-google" class="btn btn-danger btn-block">
-                        <i class="fas fa-google mr-2"></i> Login with Google
+                <hr class="my-4">
+                <p class="text-center text-muted mb-3">Or continue with</p>
+
+                <!-- OAuth 로그인 버튼들 -->
+                <div class="btn-group-vertical w-100">
+                    <button id="login-with-google" class="btn btn-outline-danger mb-2">
+                        <i class="fab fa-google mr-2"></i> Continue with Google
                     </button>
-                    <button id="login-with-naver" class="btn btn-success btn-block mt-2">
-                        <i class="fas fa-n mr-2"></i> Login with Naver
+                    <button id="login-with-naver" class="btn btn-outline-success mb-2">
+                        <i class="fab fa-naver mr-2"></i> Continue with Naver
                     </button>
-                    <button id="login-with-kakao" class="btn btn-warning btn-block mt-2">
-                        <i class="fas fa-comment mr-2"></i> Login with Kakao
+                    <button id="login-with-kakao" class="btn btn-outline-warning">
+                        <i class="fab fa-kakao mr-2"></i> Continue with Kakao
                     </button>
                 </div>
 
-                <div class="mt-3">
-                    <p>Don't have an account? <a href="/signup">Sign up</a></p>
+                <div class="mt-4 text-center">
+                    <p class="mb-2">Don't have an account? <a href="/signup" class="text-primary">Sign up here</a></p>
+                    <p><a href="#" class="text-muted">Forgot your password?</a></p>
                 </div>
+            </div>
+        </div>
+
+        <!-- 로그인 방법 안내 -->
+        <div class="card mt-3">
+            <div class="card-body">
+                <h6 class="card-title">Multiple Login Options</h6>
+                <p class="card-text text-muted small">
+                    You can sign in using your account credentials or continue with your preferred social login provider.
+                    Both methods are secure and will give you access to all features.
+                </p>
             </div>
         </div>
     </div>
 </div>
+
 <script src="/js/main.js"></script>
 <script src="/js/oauth2-handler.js"></script>
+<script>
+    // 로그인 폼 향상된 처리
+    document.addEventListener('DOMContentLoaded', function() {
+        const loginForm = document.getElementById('login-form');
+
+        if (loginForm) {
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const idOrEmail = document.getElementById('id').value.trim();
+                const password = document.getElementById('password').value;
+                const loginError = document.getElementById('login-error');
+                const submitButton = loginForm.querySelector('button[type="submit"]');
+
+                // 간단한 유효성 검사
+                if (!idOrEmail || !password) {
+                    loginError.textContent = 'Please enter both ID/Email and password.';
+                    loginError.classList.remove('d-none');
+                    return;
+                }
+
+                // 로딩 상태
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Signing In...';
+                loginError.classList.add('d-none');
+
+                // 로그인 요청
+                fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id: idOrEmail,
+                        password: password
+                    })
+                })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                console.log('Login successful');
+                                // 성공 메시지 표시 후 리다이렉트
+                                submitButton.innerHTML = '<i class="fas fa-check mr-2"></i>Success!';
+                                setTimeout(() => {
+                                    window.location.href = '/';
+                                }, 1000);
+                            } else {
+                                loginError.textContent = data.message || 'Login failed. Please check your credentials.';
+                                loginError.classList.remove('d-none');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Login error:', error);
+                            loginError.textContent = 'An error occurred. Please try again.';
+                            loginError.classList.remove('d-none');
+                        })
+                        .finally(() => {
+                            if (submitButton.innerHTML.includes('Signing In')) {
+                                submitButton.disabled = false;
+                                submitButton.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>Sign In';
+                            }
+                        });
+            });
+        }
+
+        // OAuth 버튼 이벤트
+        document.getElementById('login-with-google')?.addEventListener('click', function() {
+            window.location.href = '/oauth2/authorization/google';
+        });
+
+        document.getElementById('login-with-naver')?.addEventListener('click', function() {
+            window.location.href = '/oauth2/authorization/naver';
+        });
+
+        document.getElementById('login-with-kakao')?.addEventListener('click', function() {
+            window.location.href = '/oauth2/authorization/kakao';
+        });
+    });
+</script>

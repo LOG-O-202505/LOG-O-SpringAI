@@ -68,7 +68,7 @@ public class TravelAreaService {
         TravelRoot travelRoot = travelRootRepository.findById(travelRootId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 여행 루트가 존재하지 않습니다: " + travelRootId));
 
-        return travelAreaRepository.findByTravelDayOrderBySeq(travelRoot).stream()
+        return travelAreaRepository.findByTravelDay(travelRoot).stream()
                 .map(TravelAreaDto::fromEntity)
                 .collect(Collectors.toList());
     }
@@ -131,7 +131,6 @@ public class TravelAreaService {
                 .area(area)
                 .travel(travel)
                 .travelDay(travelRoot)
-                .seq(travelAreaDto.getSeq() != null ? travelAreaDto.getSeq() : travelArea.getSeq())
                 .startTime(travelAreaDto.getStartTime() != null ? travelAreaDto.getStartTime() : travelArea.getStartTime())
                 .memo(travelAreaDto.getMemo() != null ? travelAreaDto.getMemo() : travelArea.getMemo())
                 .build();

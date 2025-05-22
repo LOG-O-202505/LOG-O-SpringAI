@@ -122,7 +122,6 @@ public class TravelService {
                 .startDate(travelDto.getStartDate() != null ? travelDto.getStartDate() : travel.getStartDate())
                 .endDate(travelDto.getEndDate() != null ? travelDto.getEndDate() : travel.getEndDate())
                 .peoples(travelDto.getPeoples() != null ? travelDto.getPeoples() : travel.getPeoples())
-                .season(travelDto.getSeason() != null ? travelDto.getSeason() : travel.getSeason())
                 .memo(travelDto.getMemo() != null ? travelDto.getMemo() : travel.getMemo())
                 .totalBudget(travelDto.getTotalBudget() != null ? travelDto.getTotalBudget() : travel.getTotalBudget())
                 .created(travel.getCreated())

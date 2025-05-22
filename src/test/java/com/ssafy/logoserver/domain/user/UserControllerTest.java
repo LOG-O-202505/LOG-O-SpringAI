@@ -51,10 +51,10 @@ public class UserControllerTest {
                 .id("testuser")
                 .password(passwordEncoder.encode("password123"))
                 .name("테스트")
+                .email("test@example.com")
+                .gender("M")
                 .nickname("테스터")
                 .birthday(LocalDate.of(1990, 1, 1))
-                .address("서울특별시 강남구")
-                .phone("010-1234-5678")
                 .role(User.Role.USER)
                 .build();
 
@@ -119,29 +119,24 @@ public class UserControllerTest {
     @Test
     @DisplayName("새 사용자 생성")
     void createUser() throws Exception {
-        // given
         UserRequestDto userRequestDto = UserRequestDto.builder()
                 .id("newuser")
                 .password("newpassword123")
                 .name("새사용자")
+                .email("newuser@example.com")
+                .gender("F")
                 .nickname("뉴비")
                 .birthday(LocalDate.of(1995, 5, 5))
-                .address("서울특별시 서초구")
-                .phone("010-9876-5432")
                 .role(User.Role.USER)
                 .build();
 
-        // when
-        ResultActions resultActions = mockMvc.perform(
-                post("/api/users")
+        mockMvc.perform(post("/api/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(userRequestDto)));
-
-        // then
-        resultActions
+                        .content(objectMapper.writeValueAsString(userRequestDto)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", is("success")))
-                .andExpect(jsonPath("$.data.id", is("newuser")));
+                .andExpect(jsonPath("$.data.id", is("newuser")))
+                .andExpect(jsonPath("$.data.email", is("newuser@example.com")));
     }
 
     @Test
@@ -154,8 +149,6 @@ public class UserControllerTest {
                 .name("새사용자")
                 .nickname("테스터") // 이미 존재하는 닉네임
                 .birthday(LocalDate.of(1995, 5, 5))
-                .address("서울특별시 서초구")
-                .phone("010-9876-5432")
                 .role(User.Role.USER)
                 .build();
 
@@ -178,7 +171,6 @@ public class UserControllerTest {
         // given
         UserRequestDto userRequestDto = UserRequestDto.builder()
                 .nickname("업데이트된닉네임")
-                .address("서울특별시 마포구")
                 .build();
 
         // when

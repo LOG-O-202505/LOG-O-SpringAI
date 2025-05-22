@@ -31,8 +31,6 @@ public class TravelRoot {
     @JoinColumn(name = "area_id", nullable = false)
     private Area area;
 
-    private String memo;
-
     private Integer day;
 
     @Column(name = "travel_date")

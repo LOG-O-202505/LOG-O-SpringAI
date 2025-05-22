@@ -1,4 +1,4 @@
-<!-- src/main/resources/templates/mypage.mustache -->
+<!-- mypage.mustache 수정본 -->
 {{> layout/default}}
 <div class="row">
     <div class="col-md-4">
@@ -15,9 +15,9 @@
                 <hr>
                 <div id="user-details">
                     <p><strong>ID:</strong> <span id="user-id"></span></p>
+                    <p><strong>Email:</strong> <span id="user-email"></span></p>
+                    <p><strong>Gender:</strong> <span id="user-gender"></span></p>
                     <p><strong>Birthday:</strong> <span id="user-birthday"></span></p>
-                    <p><strong>Address:</strong> <span id="user-address"></span></p>
-                    <p><strong>Phone:</strong> <span id="user-phone"></span></p>
                 </div>
                 <button class="btn btn-primary btn-block mt-3" id="edit-profile-btn">Edit Profile</button>
             </div>
@@ -109,12 +109,16 @@
                         <input type="text" class="form-control" id="edit-nickname" name="nickname" required>
                     </div>
                     <div class="form-group">
-                        <label for="edit-address">Address</label>
-                        <input type="text" class="form-control" id="edit-address" name="address" required>
+                        <label for="edit-email">Email</label>
+                        <input type="email" class="form-control" id="edit-email" name="email" required>
                     </div>
                     <div class="form-group">
-                        <label for="edit-phone">Phone</label>
-                        <input type="tel" class="form-control" id="edit-phone" name="phone" required>
+                        <label for="edit-gender">Gender</label>
+                        <select class="form-control" id="edit-gender" name="gender" required>
+                            <option value="M">Male</option>
+                            <option value="F">Female</option>
+                            <option value="O">Other</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label for="edit-profileImage">Profile Image URL</label>

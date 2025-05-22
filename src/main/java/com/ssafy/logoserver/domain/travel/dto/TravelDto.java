@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -42,9 +41,6 @@ public class TravelDto {
     @Schema(description = "여행 인원수", example = "4")
     private Integer peoples;
 
-    @Schema(description = "여행 계절", example = "봄")
-    private String season;
-
     @Schema(description = "여행 메모", example = "즐거운 제주도 여행")
     private String memo;
 
@@ -66,7 +62,6 @@ public class TravelDto {
                 .startDate(travel.getStartDate())
                 .endDate(travel.getEndDate())
                 .peoples(travel.getPeoples())
-                .season(travel.getSeason())
                 .memo(travel.getMemo())
                 .totalBudget(travel.getTotalBudget())
                 .created(travel.getCreated())
@@ -86,7 +81,6 @@ public class TravelDto {
                 .startDate(travel.getStartDate())
                 .endDate(travel.getEndDate())
                 .peoples(travel.getPeoples())
-                .season(travel.getSeason())
                 .memo(travel.getMemo())
                 .totalBudget(travel.getTotalBudget())
                 .created(travel.getCreated())
@@ -102,7 +96,6 @@ public class TravelDto {
                 .startDate(startDate)
                 .endDate(endDate)
                 .peoples(peoples)
-                .season(season)
                 .memo(memo)
                 .totalBudget(totalBudget)
                 .build();

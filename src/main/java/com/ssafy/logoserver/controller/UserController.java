@@ -150,7 +150,7 @@ public class UserController {
         }
     }
 
-    @GetMapping("/exists/{nickname}")
+    @GetMapping("/exists/nickname/{nickname}")
     @Operation(summary = "닉네임 중복 체크", description = "해당 닉네임이 이미 존재하는지 확인합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공")
@@ -159,6 +159,18 @@ public class UserController {
             @Parameter(description = "사용자 닉네임", required = true)
             @PathVariable String nickname) {
         boolean exists = userService.existsByNickname(nickname);
+        return ResponseEntity.ok(Map.of("exists", exists));
+    }
+
+    @GetMapping("/exists/email/{email}")
+    @Operation(summary = "이메일 중복 체크", description = "해당 이메일이 이미 존재하는지 확인합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공")
+    })
+    public ResponseEntity<Map<String, Boolean>> existUserEmailByEmail(
+            @Parameter(description = "사용자 이메일", required = true)
+            @PathVariable String email) {
+        boolean exists = userService.existsByEmail(email);
         return ResponseEntity.ok(Map.of("exists", exists));
     }
 
