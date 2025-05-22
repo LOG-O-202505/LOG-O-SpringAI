@@ -70,18 +70,30 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         if (userOptional.isPresent()) {
             user = userOptional.get();
-            // 기존 사용자 정보 업데이트
+            log.info("Existing OAuth2 user found: {}", user.getId());
+
+            // Update existing user information
             user = updateExistingUser(user, oAuth2UserInfo);
+
+            // Check if existing user needs additional info (missing gender or birthday)
+            boolean needsAdditionalInfo = (user.getGender() == null || user.getBirthday() == null);
+            if (needsAdditionalInfo) {
+                log.info("Existing user needs additional info: {}", user.getId());
+                isNewUser = true; // Treat as new user for onboarding purposes
+            }
         } else {
-            // 새로운 사용자 생성
+            // Register new user
             user = registerNewUser(oAuth2UserInfo);
             isNewUser = true;
+            log.info("New OAuth2 user registered: {}", user.getId());
         }
 
-        // OAuth2User 속성에 신규 사용자 여부 추가
+        // Add user information to OAuth2User attributes
         Map<String, Object> attributes = new HashMap<>(oAuth2User.getAttributes());
         attributes.put("isNewUser", isNewUser);
         attributes.put("userId", user.getUuid());
+
+        log.info("OAuth2 user processing complete - isNewUser: {}, userId: {}", isNewUser, user.getUuid());
 
         return new DefaultOAuth2User(
                 Collections.singleton(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())),
@@ -114,7 +126,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .providerId(oAuth2UserInfo.getId())
                 .profileImage(oAuth2UserInfo.getImageUrl())
                 .role(User.Role.USER)
-                // gender와 birthday는 null로 두어 추가 정보 입력이 필요함을 표시
+                // Intentionally leave gender and birthday as null to trigger onboarding
+                .gender(null)
+                .birthday(null)
                 .build();
 
         return userRepository.save(user);
@@ -128,10 +142,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .id(user.getId())
                 .password(user.getPassword())
                 .name(oAuth2UserInfo.getName())
-                .nickname(user.getNickname())
+                .nickname(user.getNickname()) // Keep existing nickname
                 .email(oAuth2UserInfo.getEmail())
-                .gender(user.getGender())
-                .birthday(user.getBirthday())
+                .gender(user.getGender()) // Keep existing gender
+                .birthday(user.getBirthday()) // Keep existing birthday
                 .profileImage(oAuth2UserInfo.getImageUrl())
                 .provider(oAuth2UserInfo.getProvider())
                 .providerId(oAuth2UserInfo.getId())
