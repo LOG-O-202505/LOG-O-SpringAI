@@ -1,5 +1,7 @@
+// src/main/java/com/ssafy/logoserver/domain/user/service/OAuth2UserService.java
 package com.ssafy.logoserver.domain.user.service;
 
+import com.ssafy.logoserver.domain.user.dto.OAuth2UserCompletionDto;
 import com.ssafy.logoserver.domain.user.dto.UserDto;
 import com.ssafy.logoserver.domain.user.entity.User;
 import com.ssafy.logoserver.domain.user.repository.UserRepository;
@@ -90,5 +92,70 @@ public class OAuth2UserService {
 
         User savedUser = userRepository.save(newUser);
         return UserDto.fromEntity(savedUser);
+    }
+
+    /**
+     * OAuth2 사용자 추가 정보 완성
+     */
+    @Transactional
+    public UserDto completeUserInfo(OAuth2UserCompletionDto completionDto) {
+        User user = userRepository.findByUuid(completionDto.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("해당 사용자가 존재하지 않습니다: " + completionDto.getUserId()));
+
+        // 닉네임 중복 체크 (변경하는 경우에만)
+        if (completionDto.getNickname() != null &&
+                !completionDto.getNickname().equals(user.getNickname()) &&
+                userRepository.existsByNickname(completionDto.getNickname())) {
+            throw new IllegalArgumentException("이미 존재하는 닉네임입니다: " + completionDto.getNickname());
+        }
+
+        // 사용자 정보 업데이트
+        User updatedUser = User.builder()
+                .uuid(user.getUuid())
+                .id(user.getId())
+                .password(user.getPassword())
+                .name(user.getName())
+                .email(user.getEmail())
+                .gender(completionDto.getGender())
+                .nickname(completionDto.getNickname() != null ? completionDto.getNickname() : user.getNickname())
+                .birthday(completionDto.getBirthday())
+                .profileImage(user.getProfileImage())
+                .provider(user.getProvider())
+                .providerId(user.getProviderId())
+                .role(user.getRole())
+                .notionPageId(completionDto.getNotionPageId())
+                .created(user.getCreated())
+                .build();
+
+        User savedUser = userRepository.save(updatedUser);
+        log.info("OAuth2 user info completed for user: {}", savedUser.getUuid());
+
+        return UserDto.fromEntity(savedUser);
+    }
+
+    /**
+     * 사용자가 추가 정보 입력이 필요한지 확인
+     */
+    public boolean needsAdditionalInfo(Long userId) {
+        Optional<User> userOptional = userRepository.findByUuid(userId);
+        if (userOptional.isEmpty()) {
+            return false;
+        }
+
+        User user = userOptional.get();
+        return user.getGender() == null || user.getBirthday() == null;
+    }
+
+    /**
+     * OAuth2 사용자인지 확인
+     */
+    public boolean isOAuth2User(Long userId) {
+        Optional<User> userOptional = userRepository.findByUuid(userId);
+        if (userOptional.isEmpty()) {
+            return false;
+        }
+
+        User user = userOptional.get();
+        return user.getProvider() != null && user.getProviderId() != null;
     }
 }
