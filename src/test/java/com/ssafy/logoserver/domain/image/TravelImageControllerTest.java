@@ -67,8 +67,6 @@ public class TravelImageControllerTest {
                 .name("테스트")
                 .nickname("테스터")
                 .birthday(LocalDate.of(1990, 1, 1))
-                .address("서울특별시 강남구")
-                .phone("010-1234-5678")
                 .role(User.Role.USER)
                 .build();
 
@@ -82,7 +80,6 @@ public class TravelImageControllerTest {
                 .startDate(LocalDate.of(2025, 5, 1))
                 .endDate(LocalDate.of(2025, 5, 5))
                 .peoples(4)
-                .season("봄")
                 .build();
 
         testTravel = travelRepository.save(testTravel);
@@ -213,8 +210,6 @@ public class TravelImageControllerTest {
                 .name("다른유저")
                 .nickname("다른테스터")
                 .birthday(LocalDate.of(1995, 5, 5))
-                .address("서울특별시 서초구")
-                .phone("010-9876-5432")
                 .role(User.Role.USER)
                 .build();
 
