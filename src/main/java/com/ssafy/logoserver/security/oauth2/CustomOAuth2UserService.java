@@ -82,7 +82,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         Map<String, Object> attributes = new HashMap<>(oAuth2User.getAttributes());
         attributes.put("isNewUser", isNewUser);
         attributes.put("userId", user.getUuid());
-        attributes.put("needsAdditionalInfo", isNewUser || needsAdditionalInfo(user));
 
         return new DefaultOAuth2User(
                 Collections.singleton(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())),
@@ -142,12 +141,5 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .build();
 
         return userRepository.save(updatedUser);
-    }
-
-    /**
-     * 사용자가 추가 정보 입력이 필요한지 확인
-     */
-    private boolean needsAdditionalInfo(User user) {
-        return user.getGender() == null || user.getBirthday() == null;
     }
 }

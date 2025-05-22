@@ -40,7 +40,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private final List<String> authorizedRedirectUris = Arrays.asList(
             "http://localhost:3000/oauth2/redirect",
             "http://localhost:8080/oauth2/redirect",
-            "http://localhost:8080/"
+            "http://localhost:8090/oauth2/redirect/"
     );
 
     @Override
@@ -77,10 +77,10 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             OAuth2User oAuth2User = ((OAuth2AuthenticationToken) authentication).getPrincipal();
             Map<String, Object> attributes = oAuth2User.getAttributes();
 
-            boolean needsAdditionalInfo = (Boolean) attributes.getOrDefault("needsAdditionalInfo", false);
+            boolean isNewUser = (Boolean) attributes.getOrDefault("isNewUser", false);
 
             // 추가 정보가 필요한 경우 온보딩 페이지로 리다이렉트
-            if (needsAdditionalInfo) {
+            if (isNewUser) {
                 return redirectUri.orElse("/") + "?onboarding=true";
             }
         }
@@ -94,21 +94,14 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             Map<String, Object> attributes = oAuth2User.getAttributes();
 
             boolean isNewUser = (Boolean) attributes.getOrDefault("isNewUser", false);
-            boolean needsAdditionalInfo = (Boolean) attributes.getOrDefault("needsAdditionalInfo", false);
             Long userId = (Long) attributes.get("userId");
 
-            if (needsAdditionalInfo) {
-                // 추가 정보 필요 쿠키 설정 (7일 유효)
-                addOnboardingCookie(response, "needs_additional_info", "true", 7 * 24 * 60 * 60);
-                addOnboardingCookie(response, "user_id", userId.toString(), 7 * 24 * 60 * 60);
 
-                if (isNewUser) {
-                    addOnboardingCookie(response, "is_new_user", "true", 7 * 24 * 60 * 60);
-                }
-
-                log.info("Added onboarding cookies for user: {}, isNewUser: {}, needsAdditionalInfo: {}",
-                        userId, isNewUser, needsAdditionalInfo);
+            addOnboardingCookie(response, "user_id", userId.toString(), 7 * 24 * 60 * 60);
+            if (isNewUser) {
+                addOnboardingCookie(response, "is_new_user", "true", 60);
             }
+
         }
     }
 

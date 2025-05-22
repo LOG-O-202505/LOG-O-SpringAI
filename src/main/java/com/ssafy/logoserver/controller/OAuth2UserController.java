@@ -53,12 +53,10 @@ public class OAuth2UserController {
     })
     public ResponseEntity<Map<String, Object>> getOnboardingStatus(HttpServletRequest request) {
         // 쿠키에서 온보딩 정보 확인
-        boolean needsAdditionalInfo = getCookieValue(request, "needs_additional_info", "false").equals("true");
         boolean isNewUser = getCookieValue(request, "is_new_user", "false").equals("true");
         String userId = getCookieValue(request, "user_id", null);
 
         Map<String, Object> status = Map.of(
-                "needsAdditionalInfo", needsAdditionalInfo,
                 "isNewUser", isNewUser,
                 "userId", userId != null ? Long.parseLong(userId) : null
         );
@@ -116,7 +114,6 @@ public class OAuth2UserController {
     }
 
     private void clearOnboardingCookies(HttpServletResponse response) {
-        clearCookie(response, "needs_additional_info");
         clearCookie(response, "is_new_user");
         clearCookie(response, "user_id");
     }
