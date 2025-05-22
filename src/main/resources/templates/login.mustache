@@ -1,75 +1,125 @@
-<!-- Enhanced login.mustache -->
-{{> layout/default}}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="mb-0 text-center">Welcome Back</h4>
-                <p class="text-muted text-center mb-0">Please sign in to your account</p>
-            </div>
-            <div class="card-body">
-                <!-- 자체 로그인 폼 -->
-                <form id="login-form">
-                    <div class="form-group">
-                        <label for="id">ID or Email</label>
-                        <input type="text" class="form-control" id="id" name="id" required
-                               placeholder="Enter your ID or email">
-                    </div>
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required
-                               placeholder="Enter your password">
-                    </div>
-                    <div class="form-group form-check">
-                        <input type="checkbox" class="form-check-input" id="rememberMe">
-                        <label class="form-check-label" for="rememberMe">
-                            Remember me
-                        </label>
-                    </div>
-                    <div class="alert alert-danger d-none" id="login-error"></div>
-                    <button type="submit" class="btn btn-primary btn-block">
-                        <i class="fas fa-sign-in-alt mr-2"></i>Sign In
-                    </button>
-                </form>
-
-                <hr class="my-4">
-                <p class="text-center text-muted mb-3">Or continue with</p>
-
-                <!-- OAuth 로그인 버튼들 -->
-                <div class="btn-group-vertical w-100">
-                    <button id="login-with-google" class="btn btn-outline-danger mb-2">
-                        <i class="fab fa-google mr-2"></i> Continue with Google
-                    </button>
-                    <button id="login-with-naver" class="btn btn-outline-success mb-2">
-                        <i class="fab fa-naver mr-2"></i> Continue with Naver
-                    </button>
-                    <button id="login-with-kakao" class="btn btn-outline-warning">
-                        <i class="fab fa-kakao mr-2"></i> Continue with Kakao
-                    </button>
-                </div>
-
-                <div class="mt-4 text-center">
-                    <p class="mb-2">Don't have an account? <a href="/signup" class="text-primary">Sign up here</a></p>
-                    <p><a href="#" class="text-muted">Forgot your password?</a></p>
-                </div>
-            </div>
+<!-- src/main/resources/templates/login.mustache -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOG-O-SpringAI - Login</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" href="/">LOG-O-SpringAI</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Home</a>
+                </li>
+                <li class="nav-item login-item">
+                    <a class="nav-link" href="/login">Login</a>
+                </li>
+                <li class="nav-item signup-item">
+                    <a class="nav-link" href="/signup">Sign Up</a>
+                </li>
+                <li class="nav-item mypage-item d-none">
+                    <a class="nav-link" href="/mypage">My Page</a>
+                </li>
+                <li class="nav-item logout-item d-none">
+                    <a class="nav-link" href="#" id="logout-btn">Logout</a>
+                </li>
+            </ul>
         </div>
+    </div>
+</nav>
 
-        <!-- 로그인 방법 안내 -->
-        <div class="card mt-3">
-            <div class="card-body">
-                <h6 class="card-title">Multiple Login Options</h6>
-                <p class="card-text text-muted small">
-                    You can sign in using your account credentials or continue with your preferred social login provider.
-                    Both methods are secure and will give you access to all features.
-                </p>
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0 text-center">Welcome Back</h4>
+                    <p class="text-muted text-center mb-0">Please sign in to your account</p>
+                </div>
+                <div class="card-body">
+                    <!-- 자체 로그인 폼 -->
+                    <form id="login-form">
+                        <div class="form-group">
+                            <label for="id">ID or Email</label>
+                            <input type="text" class="form-control" id="id" name="id" required
+                                   placeholder="Enter your ID or email">
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" class="form-control" id="password" name="password" required
+                                   placeholder="Enter your password">
+                        </div>
+                        <div class="form-group form-check">
+                            <input type="checkbox" class="form-check-input" id="rememberMe">
+                            <label class="form-check-label" for="rememberMe">
+                                Remember me
+                            </label>
+                        </div>
+                        <div class="alert alert-danger d-none" id="login-error"></div>
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+                        </button>
+                    </form>
+
+                    <hr class="my-4">
+                    <p class="text-center text-muted mb-3">Or continue with</p>
+
+                    <!-- OAuth 로그인 버튼들 -->
+                    <div class="btn-group-vertical w-100">
+                        <button id="login-with-google" class="btn btn-outline-danger mb-2">
+                            <i class="fab fa-google mr-2"></i> Continue with Google
+                        </button>
+                        <button id="login-with-naver" class="btn btn-outline-success mb-2">
+                            <i class="fab fa-naver mr-2"></i> Continue with Naver
+                        </button>
+                        <button id="login-with-kakao" class="btn btn-outline-warning">
+                            <i class="fab fa-kakao mr-2"></i> Continue with Kakao
+                        </button>
+                    </div>
+
+                    <div class="mt-4 text-center">
+                        <p class="mb-2">Don't have an account? <a href="/signup" class="text-primary">Sign up here</a></p>
+                        <p><a href="#" class="text-muted">Forgot your password?</a></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 로그인 방법 안내 -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">Multiple Login Options</h6>
+                    <p class="card-text text-muted small">
+                        You can sign in using your account credentials or continue with your preferred social login provider.
+                        Both methods are secure and will give you access to all features.
+                    </p>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
+<footer class="mt-5 py-3 text-center bg-light">
+    <div class="container">
+        <p>&copy; 2025 LOG-O-SpringAI. All rights reserved.</p>
+    </div>
+</footer>
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 <script src="/js/main.js"></script>
-<script src="/js/oauth2-handler.js"></script>
+<script src="/js/oauth2-onboarding.js"></script>
 <script>
     // 로그인 폼 향상된 처리
     document.addEventListener('DOMContentLoaded', function() {
@@ -149,3 +199,5 @@
         });
     });
 </script>
+</body>
+</html>

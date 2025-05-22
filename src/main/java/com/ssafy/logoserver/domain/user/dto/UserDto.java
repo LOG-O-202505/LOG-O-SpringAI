@@ -41,6 +41,12 @@ public class UserDto {
     @Schema(description = "프로필 이미지 URL", example = "https://example.com/profile.jpg")
     private String profileImage;
 
+    @Schema(description = "노션 페이지 ID", example = "12345abc-6789-def0-1234-56789abcdef0")
+    private String notionPageId;
+
+    @Schema(description = "OAuth2 제공자", example = "google")
+    private String provider;
+
     @Schema(description = "사용자 권한", example = "USER")
     private User.Role role;
 
@@ -57,6 +63,8 @@ public class UserDto {
                 .nickname(user.getNickname())
                 .birthday(user.getBirthday())
                 .profileImage(user.getProfileImage())
+                .notionPageId(user.getNotionPageId())
+                .provider(user.getProvider())
                 .role(user.getRole())
                 .created(user.getCreated())
                 .build();

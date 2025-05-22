@@ -1,90 +1,131 @@
-<!-- mypage.mustache 수정본 -->
-{{> layout/default}}
-<div class="row">
-    <div class="col-md-4">
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0">Profile</h5>
-            </div>
-            <div class="card-body">
-                <div class="text-center mb-3">
-                    <img id="profile-image" src="" alt="Profile" class="rounded-circle img-thumbnail" style="width: 150px; height: 150px;">
-                </div>
-                <h4 id="user-name" class="text-center"></h4>
-                <p id="user-nickname" class="text-center text-muted"></p>
-                <hr>
-                <div id="user-details">
-                    <p><strong>ID:</strong> <span id="user-id"></span></p>
-                    <p><strong>Email:</strong> <span id="user-email"></span></p>
-                    <p><strong>Gender:</strong> <span id="user-gender"></span></p>
-                    <p><strong>Birthday:</strong> <span id="user-birthday"></span></p>
-                </div>
-                <button class="btn btn-primary btn-block mt-3" id="edit-profile-btn">Edit Profile</button>
-            </div>
+<!-- src/main/resources/templates/mypage.mustache -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOG-O-SpringAI - My Page</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" href="/">LOG-O-SpringAI</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Home</a>
+                </li>
+                <li class="nav-item login-item">
+                    <a class="nav-link" href="/login">Login</a>
+                </li>
+                <li class="nav-item signup-item">
+                    <a class="nav-link" href="/signup">Sign Up</a>
+                </li>
+                <li class="nav-item mypage-item d-none">
+                    <a class="nav-link" href="/mypage">My Page</a>
+                </li>
+                <li class="nav-item logout-item d-none">
+                    <a class="nav-link" href="#" id="logout-btn">Logout</a>
+                </li>
+            </ul>
         </div>
     </div>
+</nav>
 
-    <div class="col-md-8">
-        <ul class="nav nav-tabs" id="myTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <a class="nav-link active" id="travels-tab" data-toggle="tab" href="#travels" role="tab" aria-controls="travels" aria-selected="true">My Travels</a>
-            </li>
-            <li class="nav-item" role="presentation">
-                <a class="nav-link" id="images-tab" data-toggle="tab" href="#images" role="tab" aria-controls="images" aria-selected="false">My Images</a>
-            </li>
-            <li class="nav-item" role="presentation">
-                <a class="nav-link" id="liked-tab" data-toggle="tab" href="#liked" role="tab" aria-controls="liked" aria-selected="false">Liked Places</a>
-            </li>
-        </ul>
-
-        <div class="tab-content p-3 border border-top-0 rounded-bottom" id="myTabContent">
-            <!-- My Travels Tab -->
-            <div class="tab-pane fade show active" id="travels" role="tabpanel" aria-labelledby="travels-tab">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h4 class="mb-0">My Travel Plans</h4>
-                    <button class="btn btn-success" id="new-travel-btn">New Travel</button>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Profile</h5>
                 </div>
-                <div id="travel-list" class="list-group">
-                    <!-- Travel items will be added here -->
-                    <div class="text-center p-5" id="travels-loading">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="sr-only">Loading...</span>
-                        </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <img id="profile-image" src="/images/default-avatar.png" alt="Profile" class="rounded-circle img-thumbnail" style="width: 150px; height: 150px;">
                     </div>
-                    <div class="text-center p-5 d-none" id="travels-empty">
-                        <p class="text-muted">You haven't created any travel plans yet.</p>
+                    <h4 id="user-name" class="text-center">Loading...</h4>
+                    <p id="user-nickname" class="text-center text-muted">@username</p>
+                    <hr>
+                    <div id="user-details">
+                        <p><strong>ID:</strong> <span id="user-id">-</span></p>
+                        <p><strong>Email:</strong> <span id="user-email">-</span></p>
+                        <p><strong>Gender:</strong> <span id="user-gender">-</span></p>
+                        <p><strong>Birthday:</strong> <span id="user-birthday">-</span></p>
                     </div>
+                    <button class="btn btn-primary btn-block mt-3" id="edit-profile-btn">Edit Profile</button>
                 </div>
             </div>
+        </div>
 
-            <!-- My Images Tab -->
-            <div class="tab-pane fade" id="images" role="tabpanel" aria-labelledby="images-tab">
-                <h4 class="mb-3">My Travel Images</h4>
-                <div class="row" id="image-gallery">
-                    <!-- Image items will be added here -->
-                    <div class="col-12 text-center p-5" id="images-loading">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="sr-only">Loading...</span>
-                        </div>
+        <div class="col-md-8">
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link active" id="travels-tab" data-toggle="tab" href="#travels" role="tab" aria-controls="travels" aria-selected="true">My Travels</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link" id="images-tab" data-toggle="tab" href="#images" role="tab" aria-controls="images" aria-selected="false">My Images</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link" id="liked-tab" data-toggle="tab" href="#liked" role="tab" aria-controls="liked" aria-selected="false">Liked Places</a>
+                </li>
+            </ul>
+
+            <div class="tab-content p-3 border border-top-0 rounded-bottom" id="myTabContent">
+                <!-- My Travels Tab -->
+                <div class="tab-pane fade show active" id="travels" role="tabpanel" aria-labelledby="travels-tab">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="mb-0">My Travel Plans</h4>
+                        <button class="btn btn-success" id="new-travel-btn">New Travel</button>
                     </div>
-                    <div class="col-12 text-center p-5 d-none" id="images-empty">
-                        <p class="text-muted">You haven't uploaded any travel images yet.</p>
+                    <div id="travel-list" class="list-group">
+                        <!-- Travel items will be added here -->
+                        <div class="text-center p-5" id="travels-loading">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="sr-only">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="text-center p-5 d-none" id="travels-empty">
+                            <p class="text-muted">You haven't created any travel plans yet.</p>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Liked Places Tab -->
-            <div class="tab-pane fade" id="liked" role="tabpanel" aria-labelledby="liked-tab">
-                <h4 class="mb-3">Places I Like</h4>
-                <div id="liked-places" class="list-group">
-                    <!-- Liked places will be added here -->
-                    <div class="text-center p-5" id="liked-loading">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="sr-only">Loading...</span>
+                <!-- My Images Tab -->
+                <div class="tab-pane fade" id="images" role="tabpanel" aria-labelledby="images-tab">
+                    <h4 class="mb-3">My Travel Images</h4>
+                    <div class="row" id="image-gallery">
+                        <!-- Image items will be added here -->
+                        <div class="col-12 text-center p-5" id="images-loading">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="sr-only">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="col-12 text-center p-5 d-none" id="images-empty">
+                            <p class="text-muted">You haven't uploaded any travel images yet.</p>
                         </div>
                     </div>
-                    <div class="text-center p-5 d-none" id="liked-empty">
-                        <p class="text-muted">You haven't liked any places yet.</p>
+                </div>
+
+                <!-- Liked Places Tab -->
+                <div class="tab-pane fade" id="liked" role="tabpanel" aria-labelledby="liked-tab">
+                    <h4 class="mb-3">Places I Like</h4>
+                    <div id="liked-places" class="list-group">
+                        <!-- Liked places will be added here -->
+                        <div class="text-center p-5" id="liked-loading">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="sr-only">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="text-center p-5 d-none" id="liked-empty">
+                            <p class="text-muted">You haven't liked any places yet.</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -138,4 +179,335 @@
         </div>
     </div>
 </div>
+
+<footer class="mt-5 py-3 text-center bg-light">
+    <div class="container">
+        <p>&copy; 2025 LOG-O-SpringAI. All rights reserved.</p>
+    </div>
+</footer>
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 <script src="/js/main.js"></script>
+<script src="/js/oauth2-onboarding.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        loadUserProfile();
+        loadUserTravels();
+
+        // Tab change event listeners
+        document.getElementById('images-tab').addEventListener('click', function() {
+            if (!document.getElementById('images-tab').classList.contains('loaded')) {
+                loadUserImages();
+                document.getElementById('images-tab').classList.add('loaded');
+            }
+        });
+
+        document.getElementById('liked-tab').addEventListener('click', function() {
+            if (!document.getElementById('liked-tab').classList.contains('loaded')) {
+                loadLikedPlaces();
+                document.getElementById('liked-tab').classList.add('loaded');
+            }
+        });
+
+        // Edit profile button
+        document.getElementById('edit-profile-btn').addEventListener('click', function() {
+            $('#editProfileModal').modal('show');
+            populateEditForm();
+        });
+
+        // Edit profile form submission
+        document.getElementById('edit-profile-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            updateUserProfile();
+        });
+
+        // New travel button
+        document.getElementById('new-travel-btn').addEventListener('click', function() {
+            // Redirect to travel creation page or show modal
+            window.location.href = '/travels/new';
+        });
+    });
+
+    function loadUserProfile() {
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+            window.location.href = '/login';
+            return;
+        }
+
+        fetch('/api/auth/me', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const user = data.data;
+                        document.getElementById('user-name').textContent = user.name || 'No Name';
+                        document.getElementById('user-nickname').textContent = '@' + (user.nickname || 'username');
+                        document.getElementById('user-id').textContent = user.id || '-';
+                        document.getElementById('user-email').textContent = user.email || '-';
+                        document.getElementById('user-gender').textContent = user.gender || '-';
+                        document.getElementById('user-birthday').textContent = user.birthday || '-';
+
+                        if (user.profileImage) {
+                            document.getElementById('profile-image').src = user.profileImage;
+                        }
+                    } else {
+                        console.error('Failed to load user profile:', data.message);
+                        window.location.href = '/login';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading user profile:', error);
+                    window.location.href = '/login';
+                });
+    }
+
+    function loadUserTravels() {
+        const token = localStorage.getItem('accessToken');
+
+        fetch('/api/auth/me', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const userId = data.data.id;
+                        return fetch(`/api/travels/user/${userId}`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                    }
+                    throw new Error('Failed to get user info');
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('travels-loading').classList.add('d-none');
+
+                    if (data.status === 'success' && data.data.length > 0) {
+                        displayTravels(data.data);
+                    } else {
+                        document.getElementById('travels-empty').classList.remove('d-none');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading travels:', error);
+                    document.getElementById('travels-loading').classList.add('d-none');
+                    document.getElementById('travels-empty').classList.remove('d-none');
+                });
+    }
+
+    function loadUserImages() {
+        const token = localStorage.getItem('accessToken');
+
+        fetch('/api/auth/me', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const userUuid = data.data.uuid;
+                        return fetch(`/api/users/${userUuid}/images`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                    }
+                    throw new Error('Failed to get user info');
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('images-loading').classList.add('d-none');
+
+                    if (data.status === 'success' && data.data.length > 0) {
+                        displayImages(data.data);
+                    } else {
+                        document.getElementById('images-empty').classList.remove('d-none');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading images:', error);
+                    document.getElementById('images-loading').classList.add('d-none');
+                    document.getElementById('images-empty').classList.remove('d-none');
+                });
+    }
+
+    function loadLikedPlaces() {
+        const token = localStorage.getItem('accessToken');
+
+        fetch('/api/auth/me', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const userUuid = data.data.uuid;
+                        return fetch(`/api/users/${userUuid}/liked-travels`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                    }
+                    throw new Error('Failed to get user info');
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('liked-loading').classList.add('d-none');
+
+                    if (data.status === 'success' && data.data.length > 0) {
+                        displayLikedPlaces(data.data);
+                    } else {
+                        document.getElementById('liked-empty').classList.remove('d-none');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading liked places:', error);
+                    document.getElementById('liked-loading').classList.add('d-none');
+                    document.getElementById('liked-empty').classList.remove('d-none');
+                });
+    }
+
+    function displayTravels(travels) {
+        const travelList = document.getElementById('travel-list');
+        travelList.innerHTML = '';
+
+        travels.forEach(travel => {
+            const travelItem = document.createElement('div');
+            travelItem.className = 'list-group-item list-group-item-action';
+            travelItem.innerHTML = `
+            <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1">${travel.title || travel.location}</h5>
+                <small>${formatDate(travel.startDate)} - ${formatDate(travel.endDate)}</small>
+            </div>
+            <p class="mb-1">${travel.location}</p>
+            <small>People: ${travel.peoples || 1}</small>
+        `;
+            travelItem.addEventListener('click', () => {
+                window.location.href = `/travels/${travel.tuid}`;
+            });
+            travelList.appendChild(travelItem);
+        });
+    }
+
+    function displayImages(images) {
+        const imageGallery = document.getElementById('image-gallery');
+        imageGallery.innerHTML = '';
+
+        images.forEach(image => {
+            const imageCol = document.createElement('div');
+            imageCol.className = 'col-md-4 mb-3';
+            imageCol.innerHTML = `
+            <div class="card">
+                <img src="${image.url}" class="card-img-top" alt="${image.name}" style="height: 200px; object-fit: cover;">
+                <div class="card-body">
+                    <h6 class="card-title">${image.name}</h6>
+                </div>
+            </div>
+        `;
+            imageGallery.appendChild(imageCol);
+        });
+    }
+
+    function displayLikedPlaces(likedTravels) {
+        const likedPlaces = document.getElementById('liked-places');
+        likedPlaces.innerHTML = '';
+
+        likedTravels.forEach(travel => {
+            const placeItem = document.createElement('div');
+            placeItem.className = 'list-group-item list-group-item-action';
+            placeItem.innerHTML = `
+            <div class="d-flex w-100 justify-content-between">
+                <h6 class="mb-1">${travel.title || travel.location}</h6>
+                <small>${formatDate(travel.startDate)}</small>
+            </div>
+            <p class="mb-1">${travel.location}</p>
+        `;
+            placeItem.addEventListener('click', () => {
+                window.location.href = `/travels/${travel.tuid}`;
+            });
+            likedPlaces.appendChild(placeItem);
+        });
+    }
+
+    function populateEditForm() {
+        // Get current user data and populate form
+        const userName = document.getElementById('user-name').textContent;
+        const userEmail = document.getElementById('user-email').textContent;
+        const userGender = document.getElementById('user-gender').textContent;
+        const profileImage = document.getElementById('profile-image').src;
+
+        document.getElementById('edit-nickname').value = document.getElementById('user-nickname').textContent.replace('@', '');
+        document.getElementById('edit-email').value = userEmail !== '-' ? userEmail : '';
+        document.getElementById('edit-gender').value = userGender !== '-' ? userGender : '';
+        document.getElementById('edit-profileImage').value = profileImage.includes('default-avatar') ? '' : profileImage;
+    }
+
+    function updateUserProfile() {
+        const token = localStorage.getItem('accessToken');
+        const formData = new FormData(document.getElementById('edit-profile-form'));
+        const updateData = {};
+
+        // Only include non-empty fields
+        for (let [key, value] of formData.entries()) {
+            if (value.trim()) {
+                updateData[key] = value;
+            }
+        }
+
+        fetch('/api/auth/me', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const userUuid = data.data.uuid;
+                        return fetch(`/api/users/${userUuid}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify(updateData)
+                        });
+                    }
+                    throw new Error('Failed to get user info');
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        $('#editProfileModal').modal('hide');
+                        loadUserProfile(); // Reload profile
+                        alert('Profile updated successfully!');
+                    } else {
+                        document.getElementById('edit-error').textContent = data.message || 'Update failed';
+                        document.getElementById('edit-error').classList.remove('d-none');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating profile:', error);
+                    document.getElementById('edit-error').textContent = 'An error occurred while updating profile';
+                    document.getElementById('edit-error').classList.remove('d-none');
+                });
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString();
+    }
+</script>
+</body>
+</html>

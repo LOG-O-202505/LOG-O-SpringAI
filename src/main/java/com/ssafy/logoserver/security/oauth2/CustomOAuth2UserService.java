@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -35,17 +36,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     @Override
     @Transactional
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
-//        OAuth2User oAuth2User = super.loadUser(userRequest);
-//
-//        try {
-//            return processOAuth2User(userRequest, oAuth2User);
-//        } catch (AuthenticationException ex) {
-//            throw ex;
-//        } catch (Exception ex) {
-//            log.error("Exception occurred while processing OAuth2 user", ex);
-//            throw new InternalAuthenticationServiceException(ex.getMessage(), ex);
-//        }
-
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
         log.info("OAuth2 Provider: {}", registrationId);
 
@@ -76,6 +66,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         Optional<User> userOptional = userRepository.findById(loginId);
         User user;
+        boolean isNewUser = false;
 
         if (userOptional.isPresent()) {
             user = userOptional.get();
@@ -84,11 +75,18 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         } else {
             // 새로운 사용자 생성
             user = registerNewUser(oAuth2UserInfo);
+            isNewUser = true;
         }
+
+        // OAuth2User 속성에 신규 사용자 여부 추가
+        Map<String, Object> attributes = new HashMap<>(oAuth2User.getAttributes());
+        attributes.put("isNewUser", isNewUser);
+        attributes.put("userId", user.getUuid());
+        attributes.put("needsAdditionalInfo", isNewUser || needsAdditionalInfo(user));
 
         return new DefaultOAuth2User(
                 Collections.singleton(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())),
-                oAuth2User.getAttributes(),
+                attributes,
                 userRequest.getClientRegistration().getProviderDetails().getUserInfoEndpoint().getUserNameAttributeName()
         );
     }
@@ -117,6 +115,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .providerId(oAuth2UserInfo.getId())
                 .profileImage(oAuth2UserInfo.getImageUrl())
                 .role(User.Role.USER)
+                // gender와 birthday는 null로 두어 추가 정보 입력이 필요함을 표시
                 .build();
 
         return userRepository.save(user);
@@ -132,14 +131,23 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .name(oAuth2UserInfo.getName())
                 .nickname(user.getNickname())
                 .email(oAuth2UserInfo.getEmail())
+                .gender(user.getGender())
                 .birthday(user.getBirthday())
                 .profileImage(oAuth2UserInfo.getImageUrl())
                 .provider(oAuth2UserInfo.getProvider())
                 .providerId(oAuth2UserInfo.getId())
                 .role(user.getRole())
+                .notionPageId(user.getNotionPageId())
                 .created(user.getCreated())
                 .build();
 
         return userRepository.save(updatedUser);
+    }
+
+    /**
+     * 사용자가 추가 정보 입력이 필요한지 확인
+     */
+    private boolean needsAdditionalInfo(User user) {
+        return user.getGender() == null || user.getBirthday() == null;
     }
 }
