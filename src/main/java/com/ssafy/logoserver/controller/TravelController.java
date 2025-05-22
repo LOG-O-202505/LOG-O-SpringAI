@@ -1,5 +1,6 @@
 package com.ssafy.logoserver.controller;
 
+import com.ssafy.logoserver.domain.travel.dto.TravelCreateDto;
 import com.ssafy.logoserver.domain.travel.dto.TravelDto;
 import com.ssafy.logoserver.domain.travel.service.TravelService;
 import com.ssafy.logoserver.domain.user.service.UserService;
@@ -11,7 +12,9 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +26,7 @@ import java.util.Map;
 @RequestMapping("/api/travels")
 @RequiredArgsConstructor
 @Tag(name = "Travel API", description = "여행 관리 API")
+@Slf4j
 public class TravelController {
 
     private final TravelService travelService;
@@ -113,28 +117,43 @@ public class TravelController {
 
     @PostMapping
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "여행 등록", description = "새로운 여행을 등록합니다.")
+    @Operation(summary = "새로운 여행 생성", description = "새로운 여행 계획을 생성합니다.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "등록 성공"),
+            @ApiResponse(responseCode = "200", description = "생성 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청", content = @Content),
             @ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
             @ApiResponse(responseCode = "500", description = "서버 오류", content = @Content)
     })
     public ResponseEntity<Map<String, Object>> createTravel(
-            @Parameter(description = "여행 정보", required = true)
-            @RequestBody TravelDto travelDto) {
+            @Parameter(description = "여행 생성 정보", required = true)
+            @Valid @RequestBody TravelCreateDto createDto) {
         try {
             String currentUserId = SecurityUtil.getCurrentUserId();
             if (currentUserId == null) {
                 return ResponseUtil.error(org.springframework.http.HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
             }
 
-            TravelDto createdTravel = travelService.createTravel(travelDto, currentUserId);
+            log.info("새로운 여행 생성 요청 - 사용자 ID: {}, 여행 제목: {}",
+                    currentUserId, createDto.getTitle());
+
+            // 날짜 유효성 검사
+            if (createDto.getStartDate().isAfter(createDto.getEndDate())) {
+                return ResponseUtil.badRequest("출발일은 도착일보다 이전이어야 합니다.");
+            }
+
+            // 여행 생성
+            TravelDto createdTravel = travelService.createTravelFromDto(currentUserId, createDto);
+
+            log.info("새로운 여행 생성 완료 - 여행 ID: {}, 제목: {}",
+                    createdTravel.getTuid(), createdTravel.getTitle());
+
             return ResponseUtil.success(createdTravel);
         } catch (IllegalArgumentException e) {
+            log.error("여행 생성 실패: {}", e.getMessage());
             return ResponseUtil.badRequest(e.getMessage());
         } catch (Exception e) {
-            return ResponseUtil.internalServerError("여행 생성 중 오류가 발생했습니다: " + e.getMessage());
+            log.error("여행 생성 중 오류 발생", e);
+            return ResponseUtil.internalServerError("여행 생성 중 오류가 발생했습니다.");
         }
     }
 

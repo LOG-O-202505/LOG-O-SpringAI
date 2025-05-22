@@ -1,5 +1,6 @@
 package com.ssafy.logoserver.domain.travel.service;
 
+import com.ssafy.logoserver.domain.travel.dto.TravelCreateDto;
 import com.ssafy.logoserver.domain.travel.dto.TravelDto;
 import com.ssafy.logoserver.domain.travel.entity.Travel;
 import com.ssafy.logoserver.domain.travel.repository.TravelRepository;
@@ -89,7 +90,25 @@ public class TravelService {
     }
 
     /**
-     * 여행 생성
+     * TravelCreateDto를 사용한 여행 생성
+     */
+    @Transactional
+    public TravelDto createTravelFromDto(String userId, TravelCreateDto createDto) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 사용자 ID가 존재하지 않습니다: " + userId));
+
+        log.info("새로운 여행 생성 - 사용자: {}, 제목: {}", user.getNickname(), createDto.getTitle());
+
+        Travel travel = createDto.toEntity(user);
+        Travel savedTravel = travelRepository.save(travel);
+
+        log.info("여행 생성 완료 - ID: {}, 제목: {}", savedTravel.getTuid(), savedTravel.getTitle());
+
+        return TravelDto.fromEntity(savedTravel);
+    }
+
+    /**
+     * 여행 생성 (기존 메서드 유지)
      */
     @Transactional
     public TravelDto createTravel(TravelDto travelDto, String userId) {

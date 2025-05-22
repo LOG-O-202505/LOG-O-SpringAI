@@ -2,28 +2,15 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded');
 
-    // 페이지 로드 시 사용자 인증 상태 확인
-    const accessToken = localStorage.getItem('accessToken');
+    // Check authentication status and update UI immediately
+    // Do NOT check onboarding status here - only in oauth2-onboarding.js
+    checkAuthenticationAndUpdateUI();
+
+    // Get current path for navigation logic
     const currentPath = window.location.pathname;
+    console.log('Current path:', currentPath);
 
-    console.log('Access token exists:', !!accessToken);
-
-    // 로그인 상태에 따라 UI 업데이트
-    setTimeout(() => {
-        // 약간의 지연을 주어 DOM이 완전히 로드된 후 실행
-        updateUIBasedOnLoginStatus();
-    }, 100);
-
-    // 토큰이 없고, 보호된 페이지일 경우 로그인 페이지로 리다이렉트
-    if (!accessToken &&
-        currentPath !== '/' &&
-        currentPath !== '/login' &&
-        currentPath !== '/signup' &&
-        !currentPath.startsWith('/api/')) {
-        window.location.href = '/login';
-    }
-
-    // 로그아웃 버튼 이벤트 리스너
+    // Set up logout button event listener
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
         console.log('Logout button found');
@@ -31,265 +18,86 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             logout();
         });
-    } else {
-        console.log('Logout button not found');
     }
 
-    // 로그인 폼 이벤트 리스너
+    // Set up login form event listener
     const loginForm = document.getElementById('login-form');
     if (loginForm) {
         console.log('Login form found');
         loginForm.addEventListener('submit', function(e) {
             e.preventDefault();
-
-            if (!validateForm(loginForm)) return;
-
-            const id = document.getElementById('id').value;
-            const password = document.getElementById('password').value;
-            const loginError = document.getElementById('login-error');
-
-            fetch('/api/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ id, password })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success' && data.data) {
-                        console.log('Login successful');
-                        // 토큰 저장
-                        localStorage.setItem('accessToken', data.data.accessToken);
-                        localStorage.setItem('refreshToken', data.data.refreshToken);
-
-                        // 홈페이지로 이동
-                        window.location.href = '/';
-                    } else {
-                        console.log('Login failed:', data.message);
-                        // 로그인 실패
-                        if (loginError) {
-                            showError(loginError, data.message || 'Login failed. Please try again.');
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('Login error:', error);
-                    if (loginError) {
-                        showError(loginError, 'An error occurred. Please try again.');
-                    }
-                });
+            handleLoginFormSubmit(this);
         });
-    } else {
-        console.log('Login form not found');
     }
 
-    // 회원가입 폼 이벤트 리스너
+    // Set up signup form event listener
     const signupForm = document.getElementById('signup-form');
     if (signupForm) {
-        // 기존 이벤트 리스너 제거를 위한 복제본 생성
-        const newSignupForm = signupForm.cloneNode(true);
-        signupForm.parentNode.replaceChild(newSignupForm, signupForm);
-
-        console.log('Signup form found, registering event listener');
-        newSignupForm.addEventListener('submit', function(e) {
+        console.log('Signup form found');
+        signupForm.addEventListener('submit', function(e) {
             e.preventDefault();
-
-            if (!validateForm(newSignupForm)) return;
-
-            const signupError = document.getElementById('signup-error');
-
-            const userData = {
-                id: document.getElementById('id').value,
-                password: document.getElementById('password').value,
-                name: document.getElementById('name').value,
-                nickname: document.getElementById('nickname').value,
-                email: document.getElementById('email').value,
-                gender: document.getElementById('gender').value,
-                birthday: document.getElementById('birthday').value,
-                profileImage: document.getElementById('profileImage')?.value || null
-            };
-
-            // 중복 제출 방지를 위해 버튼 비활성화
-            const submitButton = newSignupForm.querySelector('button[type="submit"]');
-            if (submitButton) {
-                submitButton.disabled = true;
-                submitButton.innerHTML = 'Processing...';
-            }
-
-            fetch('/api/auth/signup', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(userData)
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        console.log('Signup successful');
-                        // 회원가입 성공
-                        alert('Registration successful! Please login with your credentials.');
-                        window.location.href = '/login';
-                    } else {
-                        console.log('Signup failed:', data.message);
-                        // 회원가입 실패
-                        if (signupError) {
-                            showError(signupError, data.message || 'Registration failed. Please try again.');
-                        }
-                        // 버튼 다시 활성화
-                        if (submitButton) {
-                            submitButton.disabled = false;
-                            submitButton.innerHTML = 'Sign Up';
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('Signup error:', error);
-                    if (signupError) {
-                        showError(signupError, 'An error occurred. Please try again.');
-                    }
-                    // 버튼 다시 활성화
-                    if (submitButton) {
-                        submitButton.disabled = false;
-                        submitButton.innerHTML = 'Sign Up';
-                    }
-                });
+            handleSignupFormSubmit(this);
         });
-    } else {
-        console.log('Signup form not found');
     }
 
-    // mypage-item 클래스를 가진 요소의 클릭 이벤트 리스너 추가
+    // Set up mypage link event listener
     const mypageLink = document.querySelector('.mypage-item a');
     if (mypageLink) {
         mypageLink.addEventListener('click', function(e) {
             e.preventDefault();
-            const token = localStorage.getItem('accessToken');
-            if (!token) {
-                window.location.href = '/login';
-                return;
-            }
-
-            // 페이지 이동 전에 토큰 검증
-            fetch('/api/auth/validate', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            })
-                .then(response => {
-                    if (response.status === 200) {
-                        window.location.href = '/mypage';
-                    } else {
-                        // 토큰 검증 실패 시 로그인 페이지로 이동
-                        localStorage.removeItem('accessToken');
-                        localStorage.removeItem('refreshToken');
-                        window.location.href = '/login';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error validating token:', error);
-                    localStorage.removeItem('accessToken');
-                    localStorage.removeItem('refreshToken');
-                    window.location.href = '/login';
-                });
+            handleMypageNavigation();
         });
     }
 
-    // 토큰 만료 여부 확인 및 갱신 (매 5분마다)
+    // Set up periodic token validation (every 5 minutes)
+    const accessToken = getAccessTokenFromCookie();
     if (accessToken) {
         setInterval(checkTokenExpiration, 5 * 60 * 1000);
     }
 
-    // API 요청에 Authorization 헤더 자동 추가
-    const originalFetch = window.fetch;
-    window.fetch = function() {
-        const args = Array.from(arguments);
-        const url = args[0];
-        const options = args[1] || {};
-
-        // API 요청이고 인증이 필요한 경우에만 헤더 추가
-        if (typeof url === 'string' && url.startsWith('/api/') && url !== '/api/auth/login' && url !== '/api/auth/signup') {
-            options.headers = options.headers || {};
-
-            const currentToken = localStorage.getItem('accessToken');
-            if (currentToken && !options.headers['Authorization']) {
-                options.headers['Authorization'] = `Bearer ${currentToken}`;
-            }
-
-            args[1] = options;
-        }
-
-        return originalFetch.apply(window, args);
-    };
-
-    // 이메일 중복 체크
-    const emailInput = document.getElementById('email');
-    if (emailInput) {
-        let emailTimeout;
-        emailInput.addEventListener('input', function() {
-            clearTimeout(emailTimeout);
-            const email = this.value.trim();
-
-            if (email && isValidEmail(email)) {
-                emailTimeout = setTimeout(() => {
-                    checkEmailDuplicate(email);
-                }, 500); // 0.5초 딜레이
-            }
-        });
-    }
-
-    // 닉네임 중복 체크 (기존 기능 강화)
-    const nicknameInput = document.getElementById('nickname');
-    if (nicknameInput) {
-        let nicknameTimeout;
-        nicknameInput.addEventListener('input', function() {
-            clearTimeout(nicknameTimeout);
-            const nickname = this.value.trim();
-
-            if (nickname.length >= 2) {
-                nicknameTimeout = setTimeout(() => {
-                    checkNicknameDuplicate(nickname);
-                }, 500);
-            }
-        });
-    }
+    // Set up real-time duplicate checking
+    setupRealTimeValidation();
 });
 
-// 로그인 상태에 따라 UI 업데이트
-function updateUIBasedOnLoginStatus() {
-    const accessToken = localStorage.getItem('accessToken');
-
-    console.log('Updating UI based on login status. Access token exists:', !!accessToken);
-    console.log('Login items found:', document.querySelectorAll('.login-item').length);
-    console.log('Signup items found:', document.querySelectorAll('.signup-item').length);
-    console.log('Mypage items found:', document.querySelectorAll('.mypage-item').length);
-    console.log('Logout items found:', document.querySelectorAll('.logout-item').length);
+// Check authentication status and update UI (NO onboarding check)
+function checkAuthenticationAndUpdateUI() {
+    const accessToken = getAccessTokenFromCookie();
+    console.log('Access token exists:', !!accessToken);
 
     if (accessToken) {
-        // 로그인 상태
-        updateUIForLoggedInUser();
-
-        // 토큰 유효성 검증 (선택적, 페이지 로드 시 토큰 유효성 확인)
-        validateToken(accessToken)
+        // Validate token with server
+        validateTokenWithServer(accessToken)
             .then(isValid => {
                 console.log('Token validation result:', isValid);
-                if (!isValid) {
-                    logout();
+                if (isValid) {
+                    updateUIForLoggedInUser();
+                } else {
+                    clearAuthenticationAndUpdateUI();
                 }
             })
             .catch(error => {
                 console.error('Token validation error:', error);
+                clearAuthenticationAndUpdateUI();
             });
     } else {
-        // 로그아웃 상태
         updateUIForLoggedOutUser();
     }
 }
 
-// 토큰 유효성 검사
-function validateToken(token) {
+// Get access token from cookie
+function getAccessTokenFromCookie() {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+        const [name, value] = cookie.trim().split('=');
+        if (name === 'access_token') {
+            return value;
+        }
+    }
+    return null;
+}
+
+// Validate token with server
+function validateTokenWithServer(token) {
     return fetch('/api/auth/validate', {
         method: 'GET',
         headers: {
@@ -305,86 +113,234 @@ function validateToken(token) {
         });
 }
 
-// 로그인 상태 UI 업데이트
+// Update UI for logged in user
 function updateUIForLoggedInUser() {
     console.log('Updating UI for logged in user');
-    // 로그인/회원가입 버튼 숨기기
-    document.querySelectorAll('.login-item, .signup-item').forEach(item => {
-        console.log('Hiding item:', item);
+
+    // Hide login/signup items
+    const loginItems = document.querySelectorAll('.login-item, .signup-item');
+    loginItems.forEach(item => {
+        console.log('Hiding login/signup item:', item);
         item.classList.add('d-none');
     });
 
-    // 마이페이지/로그아웃 버튼 표시
-    document.querySelectorAll('.mypage-item, .logout-item').forEach(item => {
-        console.log('Showing item:', item);
+    // Show mypage/logout items
+    const userItems = document.querySelectorAll('.mypage-item, .logout-item');
+    userItems.forEach(item => {
+        console.log('Showing user item:', item);
         item.classList.remove('d-none');
     });
 }
 
-// 로그아웃 상태 UI 업데이트
+// Update UI for logged out user
 function updateUIForLoggedOutUser() {
     console.log('Updating UI for logged out user');
-    // 로그인/회원가입 버튼 표시
-    document.querySelectorAll('.login-item, .signup-item').forEach(item => {
-        console.log('Showing item:', item);
+
+    // Show login/signup items
+    const loginItems = document.querySelectorAll('.login-item, .signup-item');
+    loginItems.forEach(item => {
+        console.log('Showing login/signup item:', item);
         item.classList.remove('d-none');
     });
 
-    // 마이페이지/로그아웃 버튼 숨기기
-    document.querySelectorAll('.mypage-item, .logout-item').forEach(item => {
-        console.log('Hiding item:', item);
+    // Hide mypage/logout items
+    const userItems = document.querySelectorAll('.mypage-item, .logout-item');
+    userItems.forEach(item => {
+        console.log('Hiding user item:', item);
         item.classList.add('d-none');
     });
 }
 
-// 로그아웃 함수
-function logout() {
-    console.log('Logging out');
-    // 토큰 제거
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+// Clear authentication and update UI
+function clearAuthenticationAndUpdateUI() {
+    // Clear cookies by setting them to expire
+    document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    document.cookie = 'refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    // Also clear any onboarding cookies
+    document.cookie = 'is_new_user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    document.cookie = 'user_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
 
-    // UI 업데이트
+    // Update UI
     updateUIForLoggedOutUser();
-
-    // 현재 페이지가 마이페이지면 홈으로 이동
-    if (window.location.pathname === '/mypage') {
-        window.location.href = '/';
-    } else {
-        // 다른 페이지에서는 로그인 페이지로 이동
-        window.location.href = '/login';
-    }
 }
 
-// 토큰 만료 여부 확인 및 갱신
+// Handle login form submission
+function handleLoginFormSubmit(form) {
+    if (!validateForm(form)) return;
+
+    const id = document.getElementById('id').value;
+    const password = document.getElementById('password').value;
+    const loginError = document.getElementById('login-error');
+    const submitButton = form.querySelector('button[type="submit"]');
+
+    // Show loading state
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Signing In...';
+    loginError.classList.add('d-none');
+
+    fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ id, password })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                console.log('Login successful');
+                submitButton.innerHTML = '<i class="fas fa-check mr-2"></i>Success!';
+
+                // Update UI immediately
+                updateUIForLoggedInUser();
+
+                // Redirect after short delay
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1000);
+            } else {
+                console.log('Login failed:', data.message);
+                showError(loginError, data.message || 'Login failed. Please try again.');
+                submitButton.disabled = false;
+                submitButton.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>Sign In';
+            }
+        })
+        .catch(error => {
+            console.error('Login error:', error);
+            showError(loginError, 'An error occurred. Please try again.');
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>Sign In';
+        });
+}
+
+// Handle signup form submission
+function handleSignupFormSubmit(form) {
+    if (!validateSignupForm(form)) return;
+
+    const signupError = document.getElementById('signup-error');
+    const submitButton = form.querySelector('button[type="submit"]');
+
+    const userData = {
+        id: document.getElementById('id').value,
+        password: document.getElementById('password').value,
+        name: document.getElementById('name').value,
+        nickname: document.getElementById('nickname').value,
+        email: document.getElementById('email').value,
+        gender: document.getElementById('gender').value,
+        birthday: document.getElementById('birthday').value,
+        profileImage: document.getElementById('profileImage')?.value || null
+    };
+
+    // Show loading state
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating Account...';
+
+    fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(userData)
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                console.log('Signup successful');
+                alert('Registration successful! Please login with your credentials.');
+                window.location.href = '/login';
+            } else {
+                console.log('Signup failed:', data.message);
+                showError(signupError, data.message || 'Registration failed. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Signup error:', error);
+            showError(signupError, 'An error occurred. Please try again.');
+        })
+        .finally(() => {
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<i class="fas fa-user-plus mr-2"></i>Sign Up';
+        });
+}
+
+// Handle mypage navigation
+function handleMypageNavigation() {
+    const token = getAccessTokenFromCookie();
+    if (!token) {
+        window.location.href = '/login';
+        return;
+    }
+
+    // Validate token before navigation
+    validateTokenWithServer(token)
+        .then(isValid => {
+            if (isValid) {
+                window.location.href = '/mypage';
+            } else {
+                clearAuthenticationAndUpdateUI();
+                window.location.href = '/login';
+            }
+        })
+        .catch(error => {
+            console.error('Error validating token:', error);
+            clearAuthenticationAndUpdateUI();
+            window.location.href = '/login';
+        });
+}
+
+// Logout function
+function logout() {
+    console.log('Logging out');
+
+    // Call logout API
+    fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Logout response:', data);
+        })
+        .catch(error => {
+            console.error('Logout error:', error);
+        })
+        .finally(() => {
+            // Always clear authentication and update UI
+            clearAuthenticationAndUpdateUI();
+
+            // Redirect based on current page
+            if (window.location.pathname === '/mypage') {
+                window.location.href = '/';
+            } else {
+                window.location.href = '/login';
+            }
+        });
+}
+
+// Check token expiration and refresh if needed
 function checkTokenExpiration() {
-    const accessToken = localStorage.getItem('accessToken');
-    const refreshToken = localStorage.getItem('refreshToken');
+    const accessToken = getAccessTokenFromCookie();
+    const refreshToken = getRefreshTokenFromCookie();
 
     if (!accessToken || !refreshToken) {
         return;
     }
 
-    // 토큰 갱신 요청
+    // Try to refresh token
     fetch('/api/auth/refresh', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            refreshToken: refreshToken
-        })
+        }
     })
         .then(response => response.json())
         .then(data => {
-            if (data.status === 'success' && data.data) {
+            if (data.status === 'success') {
                 console.log('Token refreshed successfully');
-                // 새 토큰 저장
-                localStorage.setItem('accessToken', data.data.accessToken);
-                localStorage.setItem('refreshToken', data.data.refreshToken);
             } else {
                 console.log('Token refresh failed');
-                // 갱신 실패 시 로그아웃
                 logout();
             }
         })
@@ -394,7 +350,19 @@ function checkTokenExpiration() {
         });
 }
 
-// 폼 유효성 검사 함수
+// Get refresh token from cookie
+function getRefreshTokenFromCookie() {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+        const [name, value] = cookie.trim().split('=');
+        if (name === 'refresh_token') {
+            return value;
+        }
+    }
+    return null;
+}
+
+// Form validation functions
 function validateForm(form) {
     const inputs = form.querySelectorAll('input[required]');
     let isValid = true;
@@ -411,92 +379,6 @@ function validateForm(form) {
     return isValid;
 }
 
-// 날짜 포맷팅 함수
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString();
-}
-
-// 에러 메시지 표시 함수
-function showError(element, message) {
-    element.textContent = message;
-    element.classList.remove('d-none');
-}
-
-// 에러 메시지 숨기기 함수
-function hideError(element) {
-    element.classList.add('d-none');
-}
-
-// 이메일 형식 검증
-function isValidEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-}
-
-// 이메일 중복 체크 함수
-function checkEmailDuplicate(email) {
-    fetch(`/api/users/exists/email/${encodeURIComponent(email)}`)
-        .then(response => response.json())
-        .then(data => {
-            const emailInput = document.getElementById('email');
-            const emailFeedback = document.getElementById('email-feedback') || createFeedbackElement('email');
-
-            if (data.exists) {
-                emailInput.classList.add('is-invalid');
-                emailInput.classList.remove('is-valid');
-                emailFeedback.textContent = '이미 사용 중인 이메일입니다.';
-                emailFeedback.className = 'form-text text-danger';
-            } else {
-                emailInput.classList.remove('is-invalid');
-                emailInput.classList.add('is-valid');
-                emailFeedback.textContent = '사용 가능한 이메일입니다.';
-                emailFeedback.className = 'form-text text-success';
-            }
-        })
-        .catch(error => {
-            console.error('Email check error:', error);
-        });
-}
-
-// 닉네임 중복 체크 함수 (기존 기능 강화)
-function checkNicknameDuplicate(nickname) {
-    fetch(`/api/users/exists/nickname/${encodeURIComponent(nickname)}`)
-        .then(response => response.json())
-        .then(data => {
-            const nicknameInput = document.getElementById('nickname');
-            const nicknameFeedback = document.getElementById('nickname-feedback');
-
-            if (data.exists) {
-                nicknameInput.classList.add('is-invalid');
-                nicknameInput.classList.remove('is-valid');
-                nicknameFeedback.textContent = '이미 사용 중인 닉네임입니다.';
-                nicknameFeedback.className = 'form-text text-danger';
-            } else {
-                nicknameInput.classList.remove('is-invalid');
-                nicknameInput.classList.add('is-valid');
-                nicknameFeedback.textContent = '사용 가능한 닉네임입니다.';
-                nicknameFeedback.className = 'form-text text-success';
-            }
-        })
-        .catch(error => {
-            console.error('Nickname check error:', error);
-        });
-}
-
-// 피드백 엘리먼트 생성 함수
-function createFeedbackElement(fieldName) {
-    const feedback = document.createElement('small');
-    feedback.id = fieldName + '-feedback';
-    feedback.className = 'form-text';
-
-    const input = document.getElementById(fieldName);
-    input.parentNode.appendChild(feedback);
-
-    return feedback;
-}
-
-// 폼 제출 전 최종 검증
 function validateSignupForm(form) {
     const inputs = form.querySelectorAll('input[required], select[required]');
     let isValid = true;
@@ -510,18 +392,134 @@ function validateSignupForm(form) {
         }
     });
 
-    // 이메일 형식 검증
+    // Email format validation
     const emailInput = document.getElementById('email');
     if (emailInput && !isValidEmail(emailInput.value)) {
         emailInput.classList.add('is-invalid');
         isValid = false;
     }
 
-    // 중복 체크 결과 확인
+    // Check for any invalid inputs
     const invalidInputs = form.querySelectorAll('.is-invalid');
     if (invalidInputs.length > 0) {
         isValid = false;
     }
 
     return isValid;
+}
+
+// Utility functions
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+function showError(element, message) {
+    element.textContent = message;
+    element.classList.remove('d-none');
+}
+
+function hideError(element) {
+    element.classList.add('d-none');
+}
+
+// Real-time validation setup
+function setupRealTimeValidation() {
+    // Email duplicate check
+    const emailInput = document.getElementById('email');
+    if (emailInput) {
+        let emailTimeout;
+        emailInput.addEventListener('input', function() {
+            clearTimeout(emailTimeout);
+            const email = this.value.trim();
+
+            if (email && isValidEmail(email)) {
+                emailTimeout = setTimeout(() => {
+                    checkEmailDuplicate(email);
+                }, 500);
+            }
+        });
+    }
+
+    // Nickname duplicate check
+    const nicknameInput = document.getElementById('nickname');
+    if (nicknameInput) {
+        let nicknameTimeout;
+        nicknameInput.addEventListener('input', function() {
+            clearTimeout(nicknameTimeout);
+            const nickname = this.value.trim();
+
+            if (nickname.length >= 2) {
+                nicknameTimeout = setTimeout(() => {
+                    checkNicknameDuplicate(nickname);
+                }, 500);
+            }
+        });
+    }
+}
+
+function checkEmailDuplicate(email) {
+    fetch(`/api/users/exists/email/${encodeURIComponent(email)}`)
+        .then(response => response.json())
+        .then(data => {
+            const emailInput = document.getElementById('email');
+            const emailFeedback = document.getElementById('email-feedback') || createFeedbackElement('email');
+
+            if (data.exists) {
+                emailInput.classList.add('is-invalid');
+                emailInput.classList.remove('is-valid');
+                emailFeedback.textContent = 'This email is already in use.';
+                emailFeedback.className = 'form-text text-danger';
+            } else {
+                emailInput.classList.remove('is-invalid');
+                emailInput.classList.add('is-valid');
+                emailFeedback.textContent = 'This email is available.';
+                emailFeedback.className = 'form-text text-success';
+            }
+        })
+        .catch(error => {
+            console.error('Email check error:', error);
+        });
+}
+
+function checkNicknameDuplicate(nickname) {
+    fetch(`/api/users/exists/nickname/${encodeURIComponent(nickname)}`)
+        .then(response => response.json())
+        .then(data => {
+            const nicknameInput = document.getElementById('nickname');
+            const nicknameFeedback = document.getElementById('nickname-feedback');
+
+            if (data.exists) {
+                nicknameInput.classList.add('is-invalid');
+                nicknameInput.classList.remove('is-valid');
+                nicknameFeedback.textContent = 'This nickname is already in use.';
+                nicknameFeedback.className = 'form-text text-danger';
+            } else {
+                nicknameInput.classList.remove('is-invalid');
+                nicknameInput.classList.add('is-valid');
+                nicknameFeedback.textContent = 'This nickname is available.';
+                nicknameFeedback.className = 'form-text text-success';
+            }
+        })
+        .catch(error => {
+            console.error('Nickname check error:', error);
+        });
+}
+
+function createFeedbackElement(fieldName) {
+    const feedback = document.createElement('small');
+    feedback.id = fieldName + '-feedback';
+    feedback.className = 'form-text';
+
+    const input = document.getElementById(fieldName);
+    input.parentNode.appendChild(feedback);
+
+    return feedback;
+}
+
+// Date formatting utility
+function formatDate(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
 }

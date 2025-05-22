@@ -1,57 +1,104 @@
 // src/main/resources/static/js/oauth2-onboarding.js
 document.addEventListener('DOMContentLoaded', function() {
-    // 온보딩 상태 확인
-    checkOnboardingStatus();
-
-    // URL 파라미터에서 onboarding 확인
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('onboarding') === 'true') {
-        showOnboardingModal();
-    }
+    // Only check onboarding status if there are specific indicators
+    checkOnboardingStatusConditionally();
 });
 
-// 온보딩 상태 확인
+// Check onboarding status only under specific conditions
+function checkOnboardingStatusConditionally() {
+    // Check URL parameters first - this indicates OAuth redirect
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasOnboardingParam = urlParams.get('onboarding') === 'true';
+
+    // Check if user just completed OAuth login
+    const hasAuthenticationCookies = hasValidAuthenticationCookies();
+
+    // Only proceed if there are clear indicators of OAuth login
+    if (hasOnboardingParam || (hasAuthenticationCookies && hasNewUserCookie())) {
+        console.log('Checking onboarding status due to OAuth login indicators');
+        checkOnboardingStatus();
+    } else {
+        console.log('No OAuth login indicators found, skipping onboarding check');
+    }
+}
+
+// Check if user has valid authentication cookies (indicating recent login)
+function hasValidAuthenticationCookies() {
+    const accessToken = getCookie('access_token');
+    const refreshToken = getCookie('refresh_token');
+    return !!(accessToken && refreshToken);
+}
+
+// Check if user has new user cookie
+function hasNewUserCookie() {
+    const isNewUser = getCookie('is_new_user');
+    return isNewUser === 'true';
+}
+
+// Check onboarding status from server
 function checkOnboardingStatus() {
     fetch('/api/oauth2/onboarding/status')
         .then(response => response.json())
         .then(data => {
-            if (data.status === 'success' && data.data.needsAdditionalInfo) {
+            console.log('Onboarding status response:', data);
+
+            // Only show modal if user is authenticated AND needs additional info
+            if (data.status === 'success' &&
+                data.data.isNewUser &&
+                data.data.needsAdditionalInfo &&
+                hasValidAuthenticationCookies()) {
+
                 console.log('User needs additional info:', data.data);
                 showOnboardingModal(data.data);
+            } else {
+                console.log('User does not need onboarding or is not authenticated');
+                // Clear any stale onboarding cookies
+                clearOnboardingCookies();
             }
         })
         .catch(error => {
             console.error('Error checking onboarding status:', error);
+            // Clear cookies on error to prevent stuck state
+            clearOnboardingCookies();
         });
 }
 
-// 온보딩 모달 표시 (HTML 생성 대신 기존 모달 사용)
+// Show onboarding modal only for authenticated users
 function showOnboardingModal(userData = null) {
-    // 사용자 데이터가 있으면 폼에 채우기
+    // Double-check authentication before showing modal
+    if (!hasValidAuthenticationCookies()) {
+        console.log('User not authenticated, not showing onboarding modal');
+        return;
+    }
+
+    console.log('Showing onboarding modal for authenticated user');
+
+    // Fill form with user data if available
     if (userData && userData.userId) {
         document.getElementById('onboarding-user-id').value = userData.userId;
     }
 
-    // 완료 버튼 이벤트 리스너 추가 (기존에 없다면)
+    // Add complete button event listener (if not already added)
     const completeBtn = document.getElementById('complete-onboarding-btn');
     if (completeBtn && !completeBtn.hasAttribute('data-listener-added')) {
         completeBtn.addEventListener('click', completeOnboarding);
         completeBtn.setAttribute('data-listener-added', 'true');
     }
 
-    // 모달 표시
+    // Show modal with backdrop that can't be dismissed
     $('#onboardingModal').modal({
         backdrop: 'static',
         keyboard: false
     });
 }
-// 온보딩 완료 처리
+
+// Complete onboarding process
 function completeOnboarding() {
     const form = document.getElementById('onboarding-form');
     const formData = new FormData(form);
     const completionData = {};
 
-    // FormData를 객체로 변환
+    // Convert FormData to object
     for (let [key, value] of formData.entries()) {
         if (value.trim() !== '') {
             if (key === 'userId') {
@@ -62,17 +109,17 @@ function completeOnboarding() {
         }
     }
 
-    // 필수 필드 확인
+    // Validate required fields
     if (!completionData.userId || !completionData.gender || !completionData.birthday) {
-        showOnboardingError('성별과 생년월일은 필수 입력 항목입니다.');
+        showOnboardingError('Gender and birthday are required fields.');
         return;
     }
 
     const completeBtn = document.getElementById('complete-onboarding-btn');
     completeBtn.disabled = true;
-    completeBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>처리 중...';
+    completeBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
 
-    // 서버에 데이터 전송
+    // Send data to server
     fetch('/api/oauth2/complete', {
         method: 'POST',
         headers: {
@@ -85,53 +132,69 @@ function completeOnboarding() {
             if (data.status === 'success') {
                 console.log('Onboarding completed successfully');
 
-                // 성공 메시지 표시
-                completeBtn.innerHTML = '<i class="fas fa-check mr-2"></i>완료!';
+                // Show success message
+                completeBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Complete!';
                 completeBtn.classList.remove('btn-success');
                 completeBtn.classList.add('btn-primary');
 
-                // 모달 닫기 및 페이지 새로고침
+                // Clear onboarding cookies
+                clearOnboardingCookies();
+
+                // Close modal and clean up URL
                 setTimeout(() => {
                     $('#onboardingModal').modal('hide');
-                    // URL에서 onboarding 파라미터 제거
+
+                    // Remove onboarding parameter from URL
                     const url = new URL(window.location);
                     url.searchParams.delete('onboarding');
                     window.history.replaceState({}, document.title, url.pathname);
 
-                    // 페이지 새로고침으로 업데이트된 사용자 정보 반영
+                    // Refresh page to reflect updated user info
                     window.location.reload();
                 }, 1500);
 
             } else {
-                showOnboardingError(data.message || '정보 입력 중 오류가 발생했습니다.');
+                showOnboardingError(data.message || 'An error occurred while completing your profile.');
                 completeBtn.disabled = false;
-                completeBtn.innerHTML = '<i class="fas fa-check mr-2"></i>정보 입력 완료';
+                completeBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Complete Profile';
             }
         })
         .catch(error => {
             console.error('Onboarding error:', error);
-            showOnboardingError('서버 오류가 발생했습니다. 다시 시도해주세요.');
+            showOnboardingError('A server error occurred. Please try again.');
             completeBtn.disabled = false;
-            completeBtn.innerHTML = '<i class="fas fa-check mr-2"></i>정보 입력 완료';
+            completeBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Complete Profile';
         });
 }
 
-// 온보딩 오류 메시지 표시
+// Show onboarding error message
 function showOnboardingError(message) {
     const errorElement = document.getElementById('onboarding-error');
-    errorElement.textContent = message;
-    errorElement.classList.remove('d-none');
+    if (errorElement) {
+        errorElement.textContent = message;
+        errorElement.classList.remove('d-none');
 
-    // 3초 후 오류 메시지 숨기기
-    setTimeout(() => {
-        errorElement.classList.add('d-none');
-    }, 5000);
+        // Hide error message after 5 seconds
+        setTimeout(() => {
+            errorElement.classList.add('d-none');
+        }, 5000);
+    }
 }
 
-// 쿠키에서 값 가져오기 (디버깅 용도)
+// Clear onboarding-related cookies
+function clearOnboardingCookies() {
+    // Set cookies to expire immediately
+    document.cookie = 'is_new_user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    document.cookie = 'user_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    console.log('Cleared onboarding cookies');
+}
+
+// Get cookie value (utility function)
 function getCookie(name) {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
+    if (parts.length === 2) {
+        return parts.pop().split(';').shift();
+    }
     return null;
 }

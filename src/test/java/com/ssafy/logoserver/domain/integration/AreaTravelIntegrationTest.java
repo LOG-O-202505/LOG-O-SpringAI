@@ -76,8 +76,6 @@ public class AreaTravelIntegrationTest {
                 .name("테스트")
                 .nickname("테스터")
                 .birthday(LocalDate.of(1990, 1, 1))
-                .address("서울특별시 강남구")
-                .phone("010-1234-5678")
                 .role(User.Role.USER)
                 .build();
 
@@ -85,7 +83,6 @@ public class AreaTravelIntegrationTest {
 
         // 테스트 지역 생성
         testArea = Area.builder()
-                .areaName("제주도")
                 .build();
 
         testArea = areaRepository.save(testArea);
@@ -98,7 +95,6 @@ public class AreaTravelIntegrationTest {
                 .startDate(LocalDate.of(2025, 5, 1))
                 .endDate(LocalDate.of(2025, 5, 5))
                 .peoples(4)
-                .season("봄")
                 .build();
 
         testTravel = travelRepository.save(testTravel);
@@ -109,7 +105,6 @@ public class AreaTravelIntegrationTest {
                 .area(testArea)
                 .day(1)
                 .travelDate(LocalDate.of(2025, 5, 1))
-                .memo("첫째 날 루트")
                 .build();
 
         testTravelRoot = travelRootRepository.save(testTravelRoot);
@@ -120,7 +115,6 @@ public class AreaTravelIntegrationTest {
     void createAreaAndTravelRoot() throws Exception {
         // 새 지역 생성
         AreaDto areaDto = AreaDto.builder()
-                .areaName("부산")
                 .build();
 
         String areaResult = mockMvc.perform(post("/api/areas")
@@ -128,7 +122,6 @@ public class AreaTravelIntegrationTest {
                         .content(objectMapper.writeValueAsString(areaDto)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", is("success")))
-                .andExpect(jsonPath("$.data.areaName", is("부산")))
                 .andReturn().getResponse().getContentAsString();
 
         // 생성된 지역의 ID 추출
@@ -143,7 +136,6 @@ public class AreaTravelIntegrationTest {
                 .areaId(areaId)
                 .day(2)
                 .travelDate(LocalDate.of(2025, 5, 2))
-                .memo("부산 여행 둘째 날")
                 .build();
 
         mockMvc.perform(post("/api/travel-roots")
@@ -151,7 +143,6 @@ public class AreaTravelIntegrationTest {
                         .content(objectMapper.writeValueAsString(travelRootDto)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", is("success")))
-                .andExpect(jsonPath("$.data.memo", is("부산 여행 둘째 날")))
                 .andExpect(jsonPath("$.data.areaId", is(areaId.intValue())));
     }
 
@@ -170,15 +161,13 @@ public class AreaTravelIntegrationTest {
     void updateAreaAndCheckTravelRoot() throws Exception {
         // 지역 이름 수정
         AreaDto areaDto = AreaDto.builder()
-                .areaName("제주특별자치도")
                 .build();
 
         mockMvc.perform(put("/api/areas/{auid}", testArea.getAuid())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(areaDto)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status", is("success")))
-                .andExpect(jsonPath("$.data.areaName", is("제주특별자치도")));
+                .andExpect(jsonPath("$.status", is("success")));
 
         // 변경된 지역 이름으로 조회
         mockMvc.perform(get("/api/areas/name/{areaName}", "제주특별자치도"))

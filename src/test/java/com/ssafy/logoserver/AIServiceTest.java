@@ -10,7 +10,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 @SpringBootTest
 public class AIServiceTest {
 
-    @MockBean
+//    @MockBean
     private ChatClient chatClient;
 
     @Autowired

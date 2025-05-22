@@ -10,16 +10,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -36,11 +33,11 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private final HttpCookieOAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository;
     private final JwtCookieProvider jwtCookieProvider;
 
-    // 하드코딩된 리다이렉트 URI 목록 (설정 파일 의존성 제거)
+    // Authorized redirect URIs
     private final List<String> authorizedRedirectUris = Arrays.asList(
             "http://localhost:3000/oauth2/redirect",
             "http://localhost:8080/oauth2/redirect",
-            "http://localhost:8080/"
+            "http://localhost:8090/oauth2/redirect/"
     );
 
     @Override
@@ -54,12 +51,13 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         clearAuthenticationAttributes(request, response);
 
-        // JWT 토큰 발급
+        // Issue JWT tokens first
         tokenRotationService.issueTokens(response, authentication);
 
-        // OAuth2 사용자 정보에서 추가 정보 필요 여부 확인
+        // Handle additional info cookie for OAuth2 users
         handleAdditionalInfoCookie(request, response, authentication);
 
+        log.info("OAuth2 authentication successful, redirecting to: {}", targetUrl);
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }
 
@@ -67,25 +65,36 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         Optional<String> redirectUri = CookieUtils.getCookie(request, REDIRECT_URI_PARAM_COOKIE_NAME)
                 .map(Cookie::getValue);
 
-        if(redirectUri.isPresent() && !isAuthorizedRedirectUri(redirectUri.get())) {
+        if (redirectUri.isPresent() && !isAuthorizedRedirectUri(redirectUri.get())) {
             log.error("Unauthorized redirect URI: {}", redirectUri.get());
             throw new IllegalArgumentException("Unauthorized redirect URI");
         }
 
-        // OAuth2 사용자 정보 확인
+        // Check if user needs onboarding
+        boolean needsOnboarding = checkIfUserNeedsOnboarding(authentication);
+        String baseUrl = redirectUri.orElse(getDefaultTargetUrl());
+
+        // Add onboarding parameter only if needed
+        if (needsOnboarding) {
+            String separator = baseUrl.contains("?") ? "&" : "?";
+            return baseUrl + separator + "onboarding=true";
+        }
+
+        return baseUrl;
+    }
+
+    private boolean checkIfUserNeedsOnboarding(Authentication authentication) {
         if (authentication instanceof OAuth2AuthenticationToken) {
             OAuth2User oAuth2User = ((OAuth2AuthenticationToken) authentication).getPrincipal();
             Map<String, Object> attributes = oAuth2User.getAttributes();
 
-            boolean needsAdditionalInfo = (Boolean) attributes.getOrDefault("needsAdditionalInfo", false);
+            // Check if this is a new user that needs additional info
+            Boolean isNewUser = (Boolean) attributes.get("isNewUser");
 
-            // 추가 정보가 필요한 경우 온보딩 페이지로 리다이렉트
-            if (needsAdditionalInfo) {
-                return redirectUri.orElse("/") + "?onboarding=true";
-            }
+            log.info("OAuth2 user onboarding check - isNewUser: {}", isNewUser);
+            return Boolean.TRUE.equals(isNewUser);
         }
-
-        return redirectUri.orElse(getDefaultTargetUrl());
+        return false;
     }
 
     private void handleAdditionalInfoCookie(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
@@ -93,43 +102,66 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             OAuth2User oAuth2User = ((OAuth2AuthenticationToken) authentication).getPrincipal();
             Map<String, Object> attributes = oAuth2User.getAttributes();
 
-            boolean isNewUser = (Boolean) attributes.getOrDefault("isNewUser", false);
-            boolean needsAdditionalInfo = (Boolean) attributes.getOrDefault("needsAdditionalInfo", false);
+            Boolean isNewUser = (Boolean) attributes.get("isNewUser");
             Long userId = (Long) attributes.get("userId");
 
-            if (needsAdditionalInfo) {
-                // 추가 정보 필요 쿠키 설정 (7일 유효)
-                addOnboardingCookie(response, "needs_additional_info", "true", 7 * 24 * 60 * 60);
-                addOnboardingCookie(response, "user_id", userId.toString(), 7 * 24 * 60 * 60);
+            log.info("Setting onboarding cookies - isNewUser: {}, userId: {}", isNewUser, userId);
 
-                if (isNewUser) {
-                    addOnboardingCookie(response, "is_new_user", "true", 7 * 24 * 60 * 60);
-                }
+            // Always set user_id cookie for OAuth2 users
+            if (userId != null) {
+                addOnboardingCookie(response, "user_id", userId.toString(), 24 * 60 * 60); // 24 hours
+            }
 
-                log.info("Added onboarding cookies for user: {}, isNewUser: {}, needsAdditionalInfo: {}",
-                        userId, isNewUser, needsAdditionalInfo);
+            // Only set is_new_user cookie if user actually needs onboarding
+            if (Boolean.TRUE.equals(isNewUser)) {
+                addOnboardingCookie(response, "is_new_user", "true", 30 * 60); // 30 minutes
+                log.info("Added is_new_user cookie for user requiring onboarding");
+            } else {
+                // Ensure the cookie is cleared if user doesn't need onboarding
+                clearOnboardingCookie(response, "is_new_user");
+                log.info("Cleared is_new_user cookie for user not requiring onboarding");
             }
         }
     }
 
     private void addOnboardingCookie(HttpServletResponse response, String name, String value, int maxAge) {
         Cookie cookie = new Cookie(name, value);
-        cookie.setHttpOnly(false); // JavaScript에서 접근 가능하도록 설정
-        cookie.setSecure(false); // 개발 환경에서는 false, 프로덕션에서는 true
+        cookie.setHttpOnly(false); // Allow JavaScript access for onboarding logic
+        cookie.setSecure(false); // Set to true in production with HTTPS
         cookie.setPath("/");
         cookie.setMaxAge(maxAge);
         response.addCookie(cookie);
+        log.debug("Added onboarding cookie: {} = {}", name, value);
+    }
+
+    private void clearOnboardingCookie(HttpServletResponse response, String name) {
+        Cookie cookie = new Cookie(name, null);
+        cookie.setHttpOnly(false);
+        cookie.setSecure(false);
+        cookie.setPath("/");
+        cookie.setMaxAge(0); // Expire immediately
+        response.addCookie(cookie);
+        log.debug("Cleared onboarding cookie: {}", name);
     }
 
     private boolean isAuthorizedRedirectUri(String uri) {
-        URI clientRedirectUri = URI.create(uri);
-
-        return authorizedRedirectUris.stream()
-                .anyMatch(authorizedRedirectUri -> {
-                    URI authorizedURI = URI.create(authorizedRedirectUri);
-                    return authorizedURI.getHost().equalsIgnoreCase(clientRedirectUri.getHost())
-                            && authorizedURI.getPort() == clientRedirectUri.getPort();
-                });
+        try {
+            java.net.URI clientRedirectUri = java.net.URI.create(uri);
+            return authorizedRedirectUris.stream()
+                    .anyMatch(authorizedRedirectUri -> {
+                        try {
+                            java.net.URI authorizedURI = java.net.URI.create(authorizedRedirectUri);
+                            return authorizedURI.getHost().equalsIgnoreCase(clientRedirectUri.getHost())
+                                    && authorizedURI.getPort() == clientRedirectUri.getPort();
+                        } catch (Exception e) {
+                            log.warn("Error parsing authorized redirect URI: {}", authorizedRedirectUri, e);
+                            return false;
+                        }
+                    });
+        } catch (Exception e) {
+            log.warn("Error parsing redirect URI: {}", uri, e);
+            return false;
+        }
     }
 
     protected void clearAuthenticationAttributes(HttpServletRequest request, HttpServletResponse response) {
