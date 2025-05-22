@@ -25,18 +25,18 @@ function checkOnboardingStatus() {
         });
 }
 
-// 온보딩 모달 표시
+// 온보딩 모달 표시 (HTML 생성 대신 기존 모달 사용)
 function showOnboardingModal(userData = null) {
-    // 모달이 이미 존재하는지 확인
-    let modal = document.getElementById('onboardingModal');
-    if (!modal) {
-        modal = createOnboardingModal();
-        document.body.appendChild(modal);
-    }
-
     // 사용자 데이터가 있으면 폼에 채우기
     if (userData && userData.userId) {
         document.getElementById('onboarding-user-id').value = userData.userId;
+    }
+
+    // 완료 버튼 이벤트 리스너 추가 (기존에 없다면)
+    const completeBtn = document.getElementById('complete-onboarding-btn');
+    if (completeBtn && !completeBtn.hasAttribute('data-listener-added')) {
+        completeBtn.addEventListener('click', completeOnboarding);
+        completeBtn.setAttribute('data-listener-added', 'true');
     }
 
     // 모달 표시
@@ -45,77 +45,6 @@ function showOnboardingModal(userData = null) {
         keyboard: false
     });
 }
-
-// 온보딩 모달 HTML 생성
-function createOnboardingModal() {
-    const modalHTML = `
-    <div class="modal fade" id="onboardingModal" tabindex="-1" aria-labelledby="onboardingModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="onboardingModalLabel">
-                        <i class="fas fa-user-plus mr-2"></i>추가 정보 입력
-                    </h5>
-                </div>
-                <div class="modal-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        서비스 이용을 위해 추가 정보를 입력해주세요.
-                    </div>
-                    <form id="onboarding-form">
-                        <input type="hidden" id="onboarding-user-id" name="userId">
-                        
-                        <div class="form-row">
-                            <div class="form-group col-md-6">
-                                <label for="onboarding-gender">성별 <span class="text-danger">*</span></label>
-                                <select class="form-control" id="onboarding-gender" name="gender" required>
-                                    <option value="">성별을 선택하세요</option>
-                                    <option value="M">남성</option>
-                                    <option value="F">여성</option>
-                                    <option value="O">기타</option>
-                                </select>
-                            </div>
-                            <div class="form-group col-md-6">
-                                <label for="onboarding-birthday">생년월일 <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control" id="onboarding-birthday" name="birthday" required>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="onboarding-nickname">닉네임 변경 (선택사항)</label>
-                            <input type="text" class="form-control" id="onboarding-nickname" name="nickname" 
-                                   placeholder="닉네임을 변경하려면 입력하세요">
-                            <small class="form-text text-muted">입력하지 않으면 기존 닉네임을 유지합니다.</small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="onboarding-notion-page-id">노션 페이지 ID (선택사항)</label>
-                            <input type="text" class="form-control" id="onboarding-notion-page-id" name="notionPageId" 
-                                   placeholder="노션 페이지 ID를 입력하세요 (선택사항)">
-                            <small class="form-text text-muted">노션과 연동하려면 페이지 ID를 입력하세요.</small>
-                        </div>
-                        
-                        <div class="alert alert-danger d-none" id="onboarding-error"></div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-success btn-block" id="complete-onboarding-btn">
-                        <i class="fas fa-check mr-2"></i>정보 입력 완료
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>`;
-
-    const modalElement = document.createElement('div');
-    modalElement.innerHTML = modalHTML;
-
-    // 완료 버튼 이벤트 리스너 추가
-    modalElement.querySelector('#complete-onboarding-btn').addEventListener('click', completeOnboarding);
-
-    return modalElement.firstElementChild;
-}
-
 // 온보딩 완료 처리
 function completeOnboarding() {
     const form = document.getElementById('onboarding-form');
