@@ -42,8 +42,6 @@ public class Travel {
 
     private Integer peoples;
 
-    private String season;
-
     @CreationTimestamp
     private LocalDateTime created;
 

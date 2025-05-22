@@ -114,7 +114,6 @@ public class TravelRootService {
                 .truid(travelRoot.getTruid())
                 .travel(travel)
                 .area(area)
-                .memo(travelRootDto.getMemo() != null ? travelRootDto.getMemo() : travelRoot.getMemo())
                 .day(travelRootDto.getDay() != null ? travelRootDto.getDay() : travelRoot.getDay())
                 .travelDate(travelRootDto.getTravelDate() != null ? travelRootDto.getTravelDate() : travelRoot.getTravelDate())
                 .travelAreas(travelRoot.getTravelAreas())

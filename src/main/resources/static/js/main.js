@@ -104,9 +104,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 password: document.getElementById('password').value,
                 name: document.getElementById('name').value,
                 nickname: document.getElementById('nickname').value,
+                email: document.getElementById('email').value,
+                gender: document.getElementById('gender').value,
                 birthday: document.getElementById('birthday').value,
-                phone: document.getElementById('phone').value,
-                address: document.getElementById('address').value,
                 profileImage: document.getElementById('profileImage')?.value || null
             };
 
@@ -223,6 +223,38 @@ document.addEventListener('DOMContentLoaded', function() {
 
         return originalFetch.apply(window, args);
     };
+
+    // 이메일 중복 체크
+    const emailInput = document.getElementById('email');
+    if (emailInput) {
+        let emailTimeout;
+        emailInput.addEventListener('input', function() {
+            clearTimeout(emailTimeout);
+            const email = this.value.trim();
+
+            if (email && isValidEmail(email)) {
+                emailTimeout = setTimeout(() => {
+                    checkEmailDuplicate(email);
+                }, 500); // 0.5초 딜레이
+            }
+        });
+    }
+
+    // 닉네임 중복 체크 (기존 기능 강화)
+    const nicknameInput = document.getElementById('nickname');
+    if (nicknameInput) {
+        let nicknameTimeout;
+        nicknameInput.addEventListener('input', function() {
+            clearTimeout(nicknameTimeout);
+            const nickname = this.value.trim();
+
+            if (nickname.length >= 2) {
+                nicknameTimeout = setTimeout(() => {
+                    checkNicknameDuplicate(nickname);
+                }, 500);
+            }
+        });
+    }
 });
 
 // 로그인 상태에 따라 UI 업데이트
@@ -394,4 +426,102 @@ function showError(element, message) {
 // 에러 메시지 숨기기 함수
 function hideError(element) {
     element.classList.add('d-none');
+}
+
+// 이메일 형식 검증
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+// 이메일 중복 체크 함수
+function checkEmailDuplicate(email) {
+    fetch(`/api/users/exists/email/${encodeURIComponent(email)}`)
+        .then(response => response.json())
+        .then(data => {
+            const emailInput = document.getElementById('email');
+            const emailFeedback = document.getElementById('email-feedback') || createFeedbackElement('email');
+
+            if (data.exists) {
+                emailInput.classList.add('is-invalid');
+                emailInput.classList.remove('is-valid');
+                emailFeedback.textContent = '이미 사용 중인 이메일입니다.';
+                emailFeedback.className = 'form-text text-danger';
+            } else {
+                emailInput.classList.remove('is-invalid');
+                emailInput.classList.add('is-valid');
+                emailFeedback.textContent = '사용 가능한 이메일입니다.';
+                emailFeedback.className = 'form-text text-success';
+            }
+        })
+        .catch(error => {
+            console.error('Email check error:', error);
+        });
+}
+
+// 닉네임 중복 체크 함수 (기존 기능 강화)
+function checkNicknameDuplicate(nickname) {
+    fetch(`/api/users/exists/nickname/${encodeURIComponent(nickname)}`)
+        .then(response => response.json())
+        .then(data => {
+            const nicknameInput = document.getElementById('nickname');
+            const nicknameFeedback = document.getElementById('nickname-feedback');
+
+            if (data.exists) {
+                nicknameInput.classList.add('is-invalid');
+                nicknameInput.classList.remove('is-valid');
+                nicknameFeedback.textContent = '이미 사용 중인 닉네임입니다.';
+                nicknameFeedback.className = 'form-text text-danger';
+            } else {
+                nicknameInput.classList.remove('is-invalid');
+                nicknameInput.classList.add('is-valid');
+                nicknameFeedback.textContent = '사용 가능한 닉네임입니다.';
+                nicknameFeedback.className = 'form-text text-success';
+            }
+        })
+        .catch(error => {
+            console.error('Nickname check error:', error);
+        });
+}
+
+// 피드백 엘리먼트 생성 함수
+function createFeedbackElement(fieldName) {
+    const feedback = document.createElement('small');
+    feedback.id = fieldName + '-feedback';
+    feedback.className = 'form-text';
+
+    const input = document.getElementById(fieldName);
+    input.parentNode.appendChild(feedback);
+
+    return feedback;
+}
+
+// 폼 제출 전 최종 검증
+function validateSignupForm(form) {
+    const inputs = form.querySelectorAll('input[required], select[required]');
+    let isValid = true;
+
+    inputs.forEach(input => {
+        if (!input.value.trim()) {
+            input.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            input.classList.remove('is-invalid');
+        }
+    });
+
+    // 이메일 형식 검증
+    const emailInput = document.getElementById('email');
+    if (emailInput && !isValidEmail(emailInput.value)) {
+        emailInput.classList.add('is-invalid');
+        isValid = false;
+    }
+
+    // 중복 체크 결과 확인
+    const invalidInputs = form.querySelectorAll('.is-invalid');
+    if (invalidInputs.length > 0) {
+        isValid = false;
+    }
+
+    return isValid;
 }

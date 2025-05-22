@@ -133,8 +133,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .nickname(user.getNickname())
                 .email(oAuth2UserInfo.getEmail())
                 .birthday(user.getBirthday())
-                .address(user.getAddress())
-                .phone(user.getPhone())
                 .profileImage(oAuth2UserInfo.getImageUrl())
                 .provider(oAuth2UserInfo.getProvider())
                 .providerId(oAuth2UserInfo.getId())

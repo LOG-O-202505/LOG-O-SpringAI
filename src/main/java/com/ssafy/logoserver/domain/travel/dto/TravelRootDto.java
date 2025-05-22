@@ -18,7 +18,6 @@ public class TravelRootDto {
     private Long truid;
     private Long travelId;
     private Long areaId;
-    private String memo;
     private Integer day;
     private LocalDate travelDate;
 
@@ -27,7 +26,6 @@ public class TravelRootDto {
                 .truid(travelRoot.getTruid())
                 .travelId(travelRoot.getTravel().getTuid())
                 .areaId(travelRoot.getArea().getAuid())
-                .memo(travelRoot.getMemo())
                 .day(travelRoot.getDay())
                 .travelDate(travelRoot.getTravelDate())
                 .build();
@@ -37,7 +35,6 @@ public class TravelRootDto {
         return TravelRoot.builder()
                 .travel(travel)
                 .area(area)
-                .memo(memo)
                 .day(day)
                 .travelDate(travelDate)
                 .build();

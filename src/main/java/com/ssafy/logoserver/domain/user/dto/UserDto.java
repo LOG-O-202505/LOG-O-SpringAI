@@ -26,17 +26,17 @@ public class UserDto {
     @Schema(description = "이름", example = "홍길동")
     private String name;
 
+    @Schema(description = "이메일", example = "user123@example.com")
+    private String email;
+
+    @Schema(description = "성별", example = "M")
+    private String gender;
+
     @Schema(description = "닉네임", example = "길동이")
     private String nickname;
 
     @Schema(description = "생년월일", example = "1990-01-01")
     private LocalDate birthday;
-
-    @Schema(description = "주소", example = "서울특별시 강남구")
-    private String address;
-
-    @Schema(description = "전화번호", example = "010-1234-5678")
-    private String phone;
 
     @Schema(description = "프로필 이미지 URL", example = "https://example.com/profile.jpg")
     private String profileImage;
@@ -52,10 +52,10 @@ public class UserDto {
                 .uuid(user.getUuid())
                 .id(user.getId())
                 .name(user.getName())
+                .email(user.getEmail())
+                .gender(user.getGender())
                 .nickname(user.getNickname())
                 .birthday(user.getBirthday())
-                .address(user.getAddress())
-                .phone(user.getPhone())
                 .profileImage(user.getProfileImage())
                 .role(user.getRole())
                 .created(user.getCreated())

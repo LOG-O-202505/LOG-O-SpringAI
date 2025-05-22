@@ -82,8 +82,6 @@ public class TravelAreaControllerTest {
                 .name("테스트")
                 .nickname("테스터")
                 .birthday(LocalDate.of(1990, 1, 1))
-                .address("서울특별시 강남구")
-                .phone("010-1234-5678")
                 .role(User.Role.USER)
                 .build();
 
@@ -91,7 +89,6 @@ public class TravelAreaControllerTest {
 
         // 테스트 지역 생성
         testArea = Area.builder()
-                .areaName("제주도")
                 .build();
 
         testArea = areaRepository.save(testArea);
@@ -104,7 +101,6 @@ public class TravelAreaControllerTest {
                 .startDate(LocalDate.of(2025, 5, 1))
                 .endDate(LocalDate.of(2025, 5, 5))
                 .peoples(4)
-                .season("봄")
                 .build();
 
         testTravel = travelRepository.save(testTravel);
@@ -115,7 +111,6 @@ public class TravelAreaControllerTest {
                 .area(testArea)
                 .day(1)
                 .travelDate(LocalDate.of(2025, 5, 1))
-                .memo("첫째 날 루트")
                 .build();
 
         testTravelRoot = travelRootRepository.save(testTravelRoot);
@@ -126,7 +121,6 @@ public class TravelAreaControllerTest {
                 .travel(testTravel)
                 .travelDay(testTravelRoot)
                 .area(testArea)
-                .seq(1)
                 .startTime(LocalDateTime.of(2025, 5, 1, 10, 0))
                 .memo("성산일출봉")
                 .build();
@@ -187,7 +181,6 @@ public class TravelAreaControllerTest {
                 .travelId(testTravel.getTuid())
                 .travelDayId(testTravelRoot.getTruid())
                 .areaId(testArea.getAuid())
-                .seq(2)
                 .startTime(LocalDateTime.of(2025, 5, 1, 14, 0))
                 .memo("우도")
                 .build();
@@ -206,7 +199,6 @@ public class TravelAreaControllerTest {
     void updateTravelArea() throws Exception {
         TravelAreaDto travelAreaDto = TravelAreaDto.builder()
                 .memo("수정된 성산일출봉")
-                .seq(3)
                 .build();
 
         mockMvc.perform(put("/api/travel-areas/{tauid}", testTravelArea.getTauid())

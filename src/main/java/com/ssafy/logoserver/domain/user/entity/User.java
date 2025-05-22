@@ -35,18 +35,12 @@ public class User {
 
     private String email;
 
-    private Integer age;
-
     private String gender;
 
     @Column(nullable = false)
     private String nickname;
 
     private LocalDate birthday;
-
-    private String address;
-
-    private String phone;
 
     @Column(name = "profile_image")
     private String profileImage;

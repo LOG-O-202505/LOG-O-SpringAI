@@ -22,7 +22,6 @@ public class TravelAreaDto {
     private Long areaId;
     private Long travelId;
     private Long travelDayId;
-    private Integer seq;
     private LocalDateTime startTime;
     private String memo;
 
@@ -33,7 +32,6 @@ public class TravelAreaDto {
                 .areaId(travelArea.getArea().getAuid())
                 .travelId(travelArea.getTravel().getTuid())
                 .travelDayId(travelArea.getTravelDay().getTruid())
-                .seq(travelArea.getSeq())
                 .startTime(travelArea.getStartTime())
                 .memo(travelArea.getMemo())
                 .build();
@@ -45,7 +43,6 @@ public class TravelAreaDto {
                 .area(area)
                 .travel(travel)
                 .travelDay(travelDay)
-                .seq(seq)
                 .startTime(startTime)
                 .memo(memo)
                 .build();

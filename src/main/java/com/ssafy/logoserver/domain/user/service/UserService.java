@@ -48,7 +48,6 @@ public class UserService {
         return UserDto.fromEntity(user);
     }
 
-
     /**
      * 닉네임으로 유저 조회
      * */
@@ -68,6 +67,11 @@ public class UserService {
             throw new IllegalArgumentException("이미 존재하는 ID입니다: " + userRequestDto.getId());
         }
 
+        // 이메일 중복 체크
+        if (userRepository.existsByEmail(userRequestDto.getEmail())) {
+            throw new IllegalArgumentException("이미 존재하는 이메일입니다: " + userRequestDto.getEmail());
+        }
+
         // 닉네임 중복 체크
         Optional<User> existingUserWithNickname = userRepository.findByNickname(userRequestDto.getNickname());
         if (existingUserWithNickname.isPresent()) {
@@ -80,10 +84,10 @@ public class UserService {
                 .id(user.getId())
                 .password(passwordEncoder.encode(user.getPassword()))
                 .name(user.getName())
+                .email(user.getEmail())
+                .gender(user.getGender())
                 .nickname(user.getNickname())
                 .birthday(user.getBirthday())
-                .address(user.getAddress())
-                .phone(user.getPhone())
                 .profileImage(user.getProfileImage())
                 .role(user.getRole() != null ? user.getRole() : User.Role.USER)
                 .build();
@@ -98,6 +102,13 @@ public class UserService {
     public UserDto updateUser(Long uuid, UserRequestDto userRequestDto) {
         User user = userRepository.findByUuid(uuid)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자가 존재하지 않습니다: " + uuid));
+
+        // 이메일 변경 시 중복 체크
+        if (userRequestDto.getEmail() != null && !userRequestDto.getEmail().equals(user.getEmail())) {
+            if (userRepository.existsByEmail(userRequestDto.getEmail())) {
+                throw new IllegalArgumentException("이미 존재하는 이메일입니다: " + userRequestDto.getEmail());
+            }
+        }
 
         // 닉네임 변경 시 중복 체크
         if (userRequestDto.getNickname() != null && !userRequestDto.getNickname().equals(user.getNickname())) {
@@ -117,18 +128,18 @@ public class UserService {
                 .name(userRequestDto.getName() != null ?
                         userRequestDto.getName() :
                         user.getName())
+                .email(userRequestDto.getEmail() != null ?
+                        userRequestDto.getEmail() :
+                        user.getEmail())
+                .gender(userRequestDto.getGender() != null ?
+                        userRequestDto.getGender() :
+                        user.getGender())
                 .nickname(userRequestDto.getNickname() != null ?
                         userRequestDto.getNickname() :
                         user.getNickname())
                 .birthday(userRequestDto.getBirthday() != null ?
                         userRequestDto.getBirthday() :
                         user.getBirthday())
-                .address(userRequestDto.getAddress() != null ?
-                        userRequestDto.getAddress() :
-                        user.getAddress())
-                .phone(userRequestDto.getPhone() != null ?
-                        userRequestDto.getPhone() :
-                        user.getPhone())
                 .profileImage(userRequestDto.getProfileImage() != null ?
                         userRequestDto.getProfileImage() :
                         user.getProfileImage())
@@ -156,6 +167,10 @@ public class UserService {
         return userRepository.existsByNickname(nickname);
     }
 
+    public boolean existsByEmail(String email) {
+        return userRepository.existsByEmail(email);
+    }
+
     /**
      * OAuth2 로그인을 처리하거나 업데이트 하는 메서드
      */
@@ -179,8 +194,6 @@ public class UserService {
                     .nickname(user.getNickname())
                     .email(email)
                     .birthday(user.getBirthday())
-                    .address(user.getAddress())
-                    .phone(user.getPhone())
                     .profileImage(profileImage)
                     .provider(provider)
                     .providerId(providerId)

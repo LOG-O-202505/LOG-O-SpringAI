@@ -59,10 +59,10 @@ public class TravelControllerTest {
                 .id("testuser")
                 .password(passwordEncoder.encode("password123"))
                 .name("테스트")
+                .email("test@example.com")
+                .gender("M")
                 .nickname("테스터")
                 .birthday(LocalDate.of(1990, 1, 1))
-                .address("서울특별시 강남구")
-                .phone("010-1234-5678")
                 .role(User.Role.USER)
                 .build();
 
@@ -76,7 +76,6 @@ public class TravelControllerTest {
                 .startDate(LocalDate.of(2025, 5, 1))
                 .endDate(LocalDate.of(2025, 5, 5))
                 .peoples(4)
-                .season("봄")
                 .build();
 
         testTravel = travelRepository.save(testTravel);
@@ -137,7 +136,6 @@ public class TravelControllerTest {
                 .startDate(LocalDate.of(2025, 6, 1))
                 .endDate(LocalDate.of(2025, 6, 3))
                 .peoples(2)
-                .season("여름")
                 .build();
 
         mockMvc.perform(post("/api/travels")

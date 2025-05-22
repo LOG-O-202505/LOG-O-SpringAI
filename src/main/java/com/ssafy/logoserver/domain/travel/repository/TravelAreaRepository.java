@@ -12,5 +12,4 @@ public interface TravelAreaRepository extends JpaRepository<TravelArea, Long> {
     List<TravelArea> findByUser(User user);
     List<TravelArea> findByTravel(Travel travel);
     List<TravelArea> findByTravelDay(TravelRoot travelRoot);
-    List<TravelArea> findByTravelDayOrderBySeq(TravelRoot travelRoot);
 }
