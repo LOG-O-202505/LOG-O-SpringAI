@@ -37,8 +37,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     // 하드코딩된 리다이렉트 URI 목록 (설정 파일 의존성 제거)
     private final List<String> authorizedRedirectUris = Arrays.asList(
             "http://localhost:3000/oauth2/redirect",
-            "http://localhost:8080/oauth2/redirect",
-            "http://localhost:8090/oauth2/redirect"
+            "http://localhost:8080/oauth2/redirect"
     );
 
     @Override
