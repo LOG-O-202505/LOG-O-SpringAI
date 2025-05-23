@@ -19,9 +19,9 @@ public class JwtTokenStore {
     /**
      * 사용자 ID와 리프레시 토큰을 저장
      */
-    public void saveRefreshToken(String userId, String refreshToken, long validityInMilliseconds) {
+    public void saveRefreshToken(String userId, String refreshToken, long validity) {
         String key = TOKEN_PREFIX + userId;
-        redisTemplate.opsForValue().set(key, refreshToken, validityInMilliseconds, TimeUnit.MILLISECONDS);
+        redisTemplate.opsForValue().set(key, refreshToken, validity, TimeUnit.SECONDS);
     }
 
     /**

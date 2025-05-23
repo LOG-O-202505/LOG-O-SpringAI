@@ -75,7 +75,7 @@ public class TokenRotationService {
         String refreshToken = jwtTokenProvider.createRefreshToken(authentication);
 
         // Redis에 리프레시 토큰 저장
-        tokenStore.saveRefreshToken(userId, refreshToken, jwtTokenProvider.getRefreshTokenValidityInMilliseconds());
+        tokenStore.saveRefreshToken(userId, refreshToken, jwtTokenProvider.getRefreshTokenValidity());
 
         // 응답 헤더에 액세스 토큰 설정
 //        response.setHeader("Authorization", "Bearer " + accessToken);
@@ -95,7 +95,7 @@ public class TokenRotationService {
         String refreshToken = jwtTokenProvider.createRefreshToken(authentication);
 
         // Redis에 리프레시 토큰 저장
-        tokenStore.saveRefreshToken(userId, refreshToken, jwtTokenProvider.getRefreshTokenValidityInMilliseconds());
+        tokenStore.saveRefreshToken(userId, refreshToken, jwtTokenProvider.getRefreshTokenValidity());
 
         Map<String, String> tokens = new HashMap<>();
         tokens.put("accessToken", accessToken);
@@ -130,7 +130,7 @@ public class TokenRotationService {
         String newRefreshToken = jwtTokenProvider.createRefreshToken(authentication);
 
         // Redis 업데이트 및 응답 설정
-        tokenStore.saveRefreshToken(userId, newRefreshToken, jwtTokenProvider.getRefreshTokenValidityInMilliseconds());
+        tokenStore.saveRefreshToken(userId, newRefreshToken, jwtTokenProvider.getRefreshTokenValidity());
 //        response.setHeader("Authorization", "Bearer " + newAccessToken);
         cookieProvider.addAccessTokenCookie(response, newAccessToken);
         cookieProvider.addRefreshTokenCookie(response, newRefreshToken);

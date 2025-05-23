@@ -26,18 +26,18 @@ public class JwtTokenProvider {
     private final Logger log = LoggerFactory.getLogger(JwtTokenProvider.class);
     private static final String AUTHORITIES_KEY = "auth";
     private final Key key;
-    private final long accessTokenValidity;
-    private final long refreshTokenValidity;
+
+    @Value("${jwt.refresh-token-validity}")
+    private long refreshTokenValidity;
+
+    @Value("${jwt.access-token-validity}")
+    private long accessTokenValidity;
 
     public JwtTokenProvider(
-            @Value("${jwt.secret}") String secret,
-            @Value("${jwt.access-token-validity}") long accessTokenValidity,
-            @Value("${jwt.refresh-token-validity}") long refreshTokenValidity
+            @Value("${jwt.secret}") String secret
     ) {
         byte[] keyBytes = Decoders.BASE64.decode(secret);
         this.key = Keys.hmacShaKeyFor(keyBytes);
-        this.accessTokenValidity = accessTokenValidity * 1000;
-        this.refreshTokenValidity = refreshTokenValidity * 1000;
     }
 
     /**
@@ -126,7 +126,7 @@ public class JwtTokenProvider {
                 .parseClaimsJws(token);
     }
 
-    public long getRefreshTokenValidityInMilliseconds() {
+    public long getRefreshTokenValidity() {
         return refreshTokenValidity;
     }
 }

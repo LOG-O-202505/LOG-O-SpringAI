@@ -32,7 +32,7 @@ public class JwtCookieProvider {
         cookie.setHttpOnly(true);
         cookie.setSecure(true); // HTTPS 환경에서만 전송
         cookie.setPath("/");
-        cookie.setMaxAge((int) (refreshTokenValidity / 1000)); // 초 단위로 변환
+        cookie.setMaxAge((int) (refreshTokenValidity)); // 초 단위로 변환
 
         if (domain != null && !domain.isEmpty()) {
             cookie.setDomain(domain);
@@ -47,7 +47,7 @@ public class JwtCookieProvider {
         cookie.setHttpOnly(true);
         cookie.setSecure(true); // HTTPS 환경에서만 전송
         cookie.setPath("/");
-        cookie.setMaxAge((int) (accessTokenValidity / 1000)); // 초 단위로 변환
+        cookie.setMaxAge((int) (accessTokenValidity)); // 초 단위로 변환
 
         if (domain != null && !domain.isEmpty()) {
             cookie.setDomain(domain);
