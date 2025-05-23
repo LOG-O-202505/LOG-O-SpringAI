@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -201,5 +202,64 @@ public class TravelRootService {
 
         // 상세 DTO 생성 및 반환
         return TravelRootDetailDto.fromEntity(travelRoot, area, travelAreas, places, verifications);
+    }
+
+    /**
+     * 특정 여행의 TravelRoot 일괄 삭제 (여행 수정 시 사용)
+     * @param travel 여행 엔티티
+     */
+    @Transactional
+    public void deleteAllTravelRootsByTravel(Travel travel) {
+        log.info("여행 루트 일괄 삭제 시작 - 여행 ID: {}", travel.getTuid());
+
+        List<TravelRoot> existingRoots = travelRootRepository.findByTravel(travel);
+
+        if (!existingRoots.isEmpty()) {
+            travelRootRepository.deleteAll(existingRoots);
+            log.info("여행 루트 일괄 삭제 완료 - {}개 삭제됨", existingRoots.size());
+        } else {
+            log.info("삭제할 여행 루트가 없습니다.");
+        }
+    }
+
+    /**
+     * 여행 기간별 TravelRoot 유효성 검증
+     * @param travel 여행 엔티티
+     * @return 유효성 검증 결과
+     */
+    public boolean validateTravelRootsForTravel(Travel travel) {
+        List<TravelRoot> travelRoots = travelRootRepository.findByTravel(travel);
+
+        LocalDate startDate = travel.getStartDate();
+        LocalDate endDate = travel.getEndDate();
+        long expectedDays = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+
+        log.info("여행 루트 유효성 검증 - 예상 일수: {}, 실제 루트 수: {}",
+                expectedDays, travelRoots.size());
+
+        // 루트 수가 예상 일수와 일치하는지 확인
+        if (travelRoots.size() != expectedDays) {
+            log.warn("여행 루트 수가 일치하지 않습니다.");
+            return false;
+        }
+
+        // 각 날짜별 루트가 올바르게 생성되었는지 확인
+        for (int dayIndex = 1; dayIndex <= expectedDays; dayIndex++) {
+            // 람다에서 사용할 수 있도록 final 변수로 복사
+            final int currentDay = dayIndex;
+            final LocalDate expectedDate = startDate.plusDays(dayIndex - 1);
+
+            boolean dayExists = travelRoots.stream()
+                    .anyMatch(root -> root.getDay().equals(currentDay) &&
+                            root.getTravelDate().equals(expectedDate));
+
+            if (!dayExists) {
+                log.warn("{}일차 루트가 누락되었습니다. 날짜: {}", currentDay, expectedDate);
+                return false;
+            }
+        }
+
+        log.info("여행 루트 유효성 검증 완료 - 모든 루트가 올바르게 생성됨");
+        return true;
     }
 }
