@@ -50,7 +50,7 @@ public class SecurityUtil {
             return null;
         }
 
-        Optional<User> userOptional = userRepository.findById(userId);
+        Optional<User> userOptional = userRepository.findByUserId(userId);
         return userOptional.map(User::getUuid).orElse(null);
     }
 

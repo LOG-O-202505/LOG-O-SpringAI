@@ -74,7 +74,7 @@ public class UserLikeService {
             throw new IllegalArgumentException("로그인이 필요합니다.");
         }
 
-        User user = userRepository.findById(currentUserId)
+        User user = userRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자를 찾을 수 없습니다."));
 
         return userLikeRepository.findByUser(user).stream()

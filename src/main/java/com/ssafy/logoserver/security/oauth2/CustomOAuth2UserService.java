@@ -64,7 +64,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String email = oAuth2UserInfo.getEmail();
         String loginId = oAuth2UserInfo.getProvider() + "_" + providerId;
 
-        Optional<User> userOptional = userRepository.findById(providerId);
+        Optional<User> userOptional = userRepository.findByUserId(providerId);
         User user;
         boolean isNewUser = false;
 

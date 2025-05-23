@@ -36,7 +36,7 @@ public class OAuth2UserService {
         String providerId = attributes.get("sub").toString();
         String loginId = provider + "_" + providerId;
 
-        Optional<User> userOptional = userRepository.findById(loginId);
+        Optional<User> userOptional = userRepository.findByUserId(loginId);
         if (userOptional.isPresent()) {
             return UserDto.fromEntity(userOptional.get());
         }
@@ -71,7 +71,7 @@ public class OAuth2UserService {
         String loginId = provider + "_" + providerId;
 
         // 기존 사용자 확인
-        Optional<User> existingUser = userRepository.findById(loginId);
+        Optional<User> existingUser = userRepository.findByUserId(loginId);
         if (existingUser.isPresent()) {
             // 필요시 사용자 정보 업데이트 로직
             User user = existingUser.get();
