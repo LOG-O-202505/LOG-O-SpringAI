@@ -103,10 +103,7 @@ public class TravelRootService {
         Travel travel = travelRepository.findById(travelRootDto.getTravelId())
                 .orElseThrow(() -> new IllegalArgumentException("해당 여행이 존재하지 않습니다: " + travelRootDto.getTravelId()));
 
-        Area area = areaRepository.findById(travelRootDto.getAreaId())
-                .orElseThrow(() -> new IllegalArgumentException("해당 지역이 존재하지 않습니다: " + travelRootDto.getAreaId()));
-
-        TravelRoot travelRoot = travelRootDto.toEntity(travel, area);
+        TravelRoot travelRoot = travelRootDto.toEntity(travel);
         return TravelRootDto.fromEntity(travelRootRepository.save(travelRoot));
     }
 
@@ -119,19 +116,11 @@ public class TravelRootService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 여행 루트가 존재하지 않습니다: " + truid));
 
         Travel travel = travelRoot.getTravel();
-        Area area = travelRoot.getArea();
-
-        // 지역 변경 요청이 있는 경우
-        if (travelRootDto.getAreaId() != null && !travelRootDto.getAreaId().equals(area.getAuid())) {
-            area = areaRepository.findById(travelRootDto.getAreaId())
-                    .orElseThrow(() -> new IllegalArgumentException("해당 지역이 존재하지 않습니다: " + travelRootDto.getAreaId()));
-        }
 
         // 새로운 여행 루트 정보 생성 (불변성 유지)
         TravelRoot updatedTravelRoot = TravelRoot.builder()
                 .truid(travelRoot.getTruid())
                 .travel(travel)
-                .area(area)
                 .day(travelRootDto.getDay() != null ? travelRootDto.getDay() : travelRoot.getDay())
                 .travelDate(travelRootDto.getTravelDate() != null ? travelRootDto.getTravelDate() : travelRoot.getTravelDate())
                 .travelAreas(travelRoot.getTravelAreas())
@@ -160,9 +149,6 @@ public class TravelRootService {
         TravelRoot travelRoot = travelRootRepository.findById(truid)
                 .orElseThrow(() -> new IllegalArgumentException("해당 여행 루트가 존재하지 않습니다: " + truid));
 
-        // 지역 정보 조회
-        AreaDto area = AreaDto.fromEntity(travelRoot.getArea());
-
         // 여행 지역 목록 조회
         List<TravelAreaDto> travelAreas = travelAreaRepository.findByTravelDay(travelRoot).stream()
                 .map(TravelAreaDto::fromEntity)
@@ -175,11 +161,6 @@ public class TravelRootService {
 
         // 각 여행 지역에 연결된 장소와 인증 정보 수집
         for (TravelAreaDto travelArea : travelAreas) {
-            // 지역 ID로 장소 조회
-            placeRepository.findByArea(travelRoot.getArea()).stream()
-                    .map(PlaceDto::fromEntity)
-                    .forEach(places::add);
-
             // 사용자 ID와 장소 ID로 인증 정보 조회
             User user = userRepository.findByUuid(travelArea.getUserId())
                     .orElse(null);
@@ -201,7 +182,7 @@ public class TravelRootService {
         verifications = verifications.stream().distinct().collect(Collectors.toList());
 
         // 상세 DTO 생성 및 반환
-        return TravelRootDetailDto.fromEntity(travelRoot, area, travelAreas, places, verifications);
+        return TravelRootDetailDto.fromEntity(travelRoot, travelAreas, places, verifications);
     }
 
     /**

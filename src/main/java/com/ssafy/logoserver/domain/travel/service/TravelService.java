@@ -147,10 +147,6 @@ public class TravelService {
 
         log.info("총 여행 기간: {}일", daysBetween);
 
-        // 기본 지역 정보 조회 (첫 번째 지역을 기본으로 사용)
-        // 실제 프로젝트에서는 여행 위치에 따른 적절한 지역을 선택하는 로직이 필요할 수 있음
-        Area defaultArea = getDefaultAreaForTravel(travel);
-
         List<TravelRoot> travelRoots = new ArrayList<>();
 
         // 각 날짜별로 TravelRoot 생성
@@ -162,7 +158,6 @@ public class TravelService {
 
             TravelRoot travelRoot = TravelRoot.builder()
                     .travel(travel)
-                    .area(defaultArea)
                     .day(dayNumber)
                     .travelDate(currentDate)
                     .travelAreas(new ArrayList<>()) // 빈 리스트로 초기화
@@ -200,7 +195,6 @@ public class TravelService {
             Area defaultArea = Area.builder()
                     .region(1L) // 기본 시/도 코드
                     .sig(1L)    // 기본 시/군/구 코드
-                    .travelRoots(new ArrayList<>())
                     .travelAreas(new ArrayList<>())
                     .places(new ArrayList<>())
                     .build();

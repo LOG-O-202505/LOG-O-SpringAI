@@ -25,12 +25,6 @@ public class TravelRootDetailDto {
     @Schema(description = "여행 ID", example = "1")
     private Long travelId;
 
-    @Schema(description = "지역 ID", example = "1")
-    private Long areaId;
-
-    @Schema(description = "지역 정보")
-    private AreaDto area;
-
     @Schema(description = "여행 일차", example = "1")
     private Integer day;
 
@@ -50,15 +44,12 @@ public class TravelRootDetailDto {
      * 엔티티에서 상세 DTO 변환
      */
     public static TravelRootDetailDto fromEntity(TravelRoot travelRoot,
-                                                 AreaDto area,
                                                  List<TravelAreaDto> travelAreas,
                                                  List<PlaceDto> places,
                                                  List<VerificationDto> verifications) {
         return TravelRootDetailDto.builder()
                 .truid(travelRoot.getTruid())
                 .travelId(travelRoot.getTravel().getTuid())
-                .areaId(travelRoot.getArea().getAuid())
-                .area(area)
                 .day(travelRoot.getDay())
                 .travelDate(travelRoot.getTravelDate())
                 .travelAreas(travelAreas)

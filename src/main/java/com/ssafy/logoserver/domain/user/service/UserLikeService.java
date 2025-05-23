@@ -1,7 +1,9 @@
 package com.ssafy.logoserver.domain.user.service;
 
+import com.ssafy.logoserver.domain.area.entity.Place;
 import com.ssafy.logoserver.domain.travel.dto.TravelDto;
 import com.ssafy.logoserver.domain.travel.entity.Travel;
+import com.ssafy.logoserver.domain.travel.entity.TravelArea;
 import com.ssafy.logoserver.domain.user.dto.UserLikeDetailDto;
 import com.ssafy.logoserver.domain.user.entity.User;
 import com.ssafy.logoserver.domain.user.entity.UserLike;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,11 +37,11 @@ public class UserLikeService {
 
         return userLikeRepository.findByUser(user).stream()
                 .map(UserLike::getPlace)
-                .filter(place -> place != null)
-                .map(place -> place.getArea())
-                .filter(area -> area != null)
-                .flatMap(area -> area.getTravelRoots().stream())
-                .map(travelRoot -> travelRoot.getTravel())
+                .filter(Objects::nonNull)
+                .map(Place::getArea)
+                .filter(Objects::nonNull)
+                .flatMap(area -> area.getTravelAreas().stream())
+                .map(TravelArea::getTravel)
                 .distinct()
                 .map(TravelDto::fromEntity)
                 .collect(Collectors.toList());

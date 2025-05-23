@@ -28,9 +28,6 @@ public class Area {
     private Long sig;
 
     @OneToMany(mappedBy = "area", cascade = CascadeType.ALL)
-    private List<TravelRoot> travelRoots = new ArrayList<>();
-
-    @OneToMany(mappedBy = "area", cascade = CascadeType.ALL)
     private List<TravelArea> travelAreas = new ArrayList<>();
 
     @OneToMany(mappedBy = "area", cascade = CascadeType.ALL)
