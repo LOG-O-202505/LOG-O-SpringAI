@@ -58,9 +58,6 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()));
 
-        //Form 로그인 방식 disable 설정
-        http
-                .formLogin(AbstractHttpConfigurer::disable);
 
         //HTTP Basic 인증 방식 disable
         http

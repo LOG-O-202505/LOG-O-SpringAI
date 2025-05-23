@@ -44,7 +44,7 @@ public class JwtCookieProvider {
     public void addAccessTokenCookie(HttpServletResponse response, String accessToken) {
         log.info("Access Token value : " + accessToken);
         Cookie cookie = new Cookie(ACCESS_TOKEN_COOKIE_NAME, accessToken);
-        cookie.setHttpOnly(true);
+//        cookie.setHttpOnly(true);
         cookie.setSecure(true); // HTTPS 환경에서만 전송
         cookie.setPath("/");
         cookie.setMaxAge((int) (accessTokenValidity)); // 초 단위로 변환
@@ -108,7 +108,7 @@ public class JwtCookieProvider {
      */
     public void deleteAccessTokenCookie(HttpServletResponse response) {
         Cookie cookie = new Cookie(ACCESS_TOKEN_COOKIE_NAME, null);
-        cookie.setHttpOnly(true);
+//        cookie.setHttpOnly(true);
         cookie.setSecure(true);
         cookie.setPath("/");
         cookie.setMaxAge(0); // 즉시 만료

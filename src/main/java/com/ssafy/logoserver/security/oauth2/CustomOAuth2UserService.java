@@ -64,7 +64,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String email = oAuth2UserInfo.getEmail();
         String loginId = oAuth2UserInfo.getProvider() + "_" + providerId;
 
-        Optional<User> userOptional = userRepository.findById(loginId);
+        Optional<User> userOptional = userRepository.findById(providerId);
         User user;
         boolean isNewUser = false;
 
@@ -118,7 +118,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         log.info("Registering new OAuth2 user: {}", oAuth2UserInfo.getEmail());
 
         User user = User.builder()
-                .id(oAuth2UserInfo.getProvider() + "_" + oAuth2UserInfo.getId())
+//                .id(oAuth2UserInfo.getProvider() + "_" + oAuth2UserInfo.getId())
+                .id(oAuth2UserInfo.getId())
                 .name(oAuth2UserInfo.getName())
                 .email(oAuth2UserInfo.getEmail())
                 .nickname(oAuth2UserInfo.getName())

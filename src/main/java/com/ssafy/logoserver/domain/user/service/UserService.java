@@ -231,9 +231,7 @@ public class UserService {
     @Transactional
     public UserDto processOAuthUser(String provider, String providerId, String email, String name, String profileImage) {
         // OAuth2 로그인 ID 생성 (provider_providerId 형식)
-        String oAuthId = provider + "_" + providerId;
-
-        Optional<User> existingUser = userRepository.findById(oAuthId);
+        Optional<User> existingUser = userRepository.findById(providerId);
         User user;
 
         if (existingUser.isPresent()) {
@@ -242,7 +240,7 @@ public class UserService {
             // 이메일, 이름, 프로필 이미지 업데이트
             User updatedUser = User.builder()
                     .uuid(user.getUuid())
-                    .id(oAuthId)
+                    .id(providerId)
                     .password(user.getPassword())
                     .name(name)
                     .nickname(user.getNickname())
@@ -259,7 +257,7 @@ public class UserService {
         } else {
             // 새 사용자 등록
             User newUser = User.builder()
-                    .id(oAuthId)
+                    .id(providerId)
                     .name(name)
                     .nickname(name) // 닉네임은 이름으로 초기화
                     .email(email)

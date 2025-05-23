@@ -39,7 +39,7 @@ public class TokenRotationService {
                 Map<String, Object> attributes = oauth2Auth.getPrincipal().getAttributes();
                 Map<String, Object> res = (Map<String, Object>) attributes.get("response");
                 if (res != null && res.containsKey("id")) {
-                    userId = "naver_" + res.get("id").toString();
+                    userId = res.get("id").toString();
                 } else {
                     log.error("Naver OAuth response does not contain id field");
                     userId = oauth2Auth.getName(); // 백업 옵션
@@ -48,7 +48,7 @@ public class TokenRotationService {
                 // 구글 OAuth 처리
                 Map<String, Object> attributes = oauth2Auth.getPrincipal().getAttributes();
                 if (attributes.containsKey("sub")) {
-                    userId = "google_" + attributes.get("sub").toString();
+                    userId = attributes.get("sub").toString();
                 } else {
                     userId = oauth2Auth.getName();
                 }
@@ -56,7 +56,7 @@ public class TokenRotationService {
                 // 카카오 OAuth 처리
                 Map<String, Object> attributes = oauth2Auth.getPrincipal().getAttributes();
                 if (attributes.containsKey("id")) {
-                    userId = "kakao_" + attributes.get("id").toString();
+                    userId = attributes.get("id").toString();
                 } else {
                     log.error("Kakao OAuth response does not contain id field");
                     userId = oauth2Auth.getName(); // 백업 옵션
