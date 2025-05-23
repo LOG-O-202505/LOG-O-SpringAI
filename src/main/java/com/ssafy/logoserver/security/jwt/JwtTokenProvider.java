@@ -68,7 +68,8 @@ public class JwtTokenProvider {
                 .collect(Collectors.joining(","));
 
         long now = (new Date()).getTime();
-        Date expiration = new Date(now + validity);
+        Date expiration = new Date(now + (validity * 1000)); // 초를 밀리초로 변환
+        log.debug("Creating token for user: {}, expires at: {}", authentication.getName(), expiration);
 
         return Jwts.builder()
                 .setSubject(authentication.getName())

@@ -1,5 +1,6 @@
 package com.ssafy.logoserver.security.jwt;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,10 +22,12 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider tokenProvider;
     private final TokenRotationService tokenRotationService;
+    private final JwtCookieProvider cookieProvider;
 
-    public JwtFilter(JwtTokenProvider tokenProvider, TokenRotationService tokenRotationService) {
+    public JwtFilter(JwtTokenProvider tokenProvider, TokenRotationService tokenRotationService, JwtCookieProvider cookieProvider) {
         this.tokenProvider = tokenProvider;
         this.tokenRotationService = tokenRotationService;
+        this.cookieProvider = cookieProvider;
     }
 
     @Override
@@ -33,26 +36,28 @@ public class JwtFilter extends OncePerRequestFilter {
         String jwt = resolveToken(request);
 
         if (StringUtils.hasText(jwt)) {
-            if (tokenProvider.validateToken(jwt)) {
-                // 액세스 토큰 유효 - 인증 정보 설정
-                Authentication authentication = tokenProvider.getAuthentication(jwt);
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.debug("Set Authentication to security context for '{}', uri: {}", authentication.getName(), request.getRequestURI());
-            } else {
+            try {
+                if (tokenProvider.validateToken(jwt)) {
+                    Authentication authentication = tokenProvider.getAuthentication(jwt);
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    log.debug("Set Authentication to security context for '{}', uri: {}", authentication.getName(), request.getRequestURI());
+                }
+            } catch (ExpiredJwtException e) {
                 // 액세스 토큰 만료 - 리프레시 토큰으로 갱신 시도
+                log.debug("Access token expired, attempting token rotation");
                 boolean rotated = tokenRotationService.rotateTokens(request, response);
                 if (rotated) {
-                    // 토큰 갱신 성공 - 새 액세스 토큰의 인증 정보 설정
-                    String newJwt = response.getHeader(AUTHORIZATION_HEADER).substring(BEARER_PREFIX.length());
-                    Authentication authentication = tokenProvider.getAuthentication(newJwt);
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                    log.debug("Rotated tokens and set Authentication for user '{}', uri: {}", authentication.getName(), request.getRequestURI());
+                    // 새 액세스 토큰으로 인증 정보 설정
+                    String newJwt = cookieProvider.getAccessTokenTokenFromCookies(request);
+                    if (newJwt != null && tokenProvider.validateToken(newJwt)) {
+                        Authentication authentication = tokenProvider.getAuthentication(newJwt);
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                        log.debug("Token rotated successfully for user: {}", authentication.getName());
+                    }
                 } else {
-                    log.debug("Invalid JWT token or failed to rotate tokens, uri: {}", request.getRequestURI());
+                    log.debug("Token rotation failed");
                 }
             }
-        } else {
-            log.debug("No JWT token found in request, uri: {}", request.getRequestURI());
         }
 
         filterChain.doFilter(request, response);

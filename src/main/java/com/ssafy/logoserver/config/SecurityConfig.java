@@ -1,5 +1,6 @@
 package com.ssafy.logoserver.config;
 
+import com.ssafy.logoserver.security.jwt.JwtCookieProvider;
 import com.ssafy.logoserver.security.jwt.JwtFilter;
 import com.ssafy.logoserver.security.jwt.JwtTokenProvider;
 import com.ssafy.logoserver.security.jwt.TokenRotationService;
@@ -32,6 +33,7 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final JwtCookieProvider jwtCookieProvider;
     private final TokenRotationService tokenRotationService;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
@@ -44,7 +46,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtCookieProvider jwtCookieProvider) throws Exception {
         //csrf 공격 방어 설정
         http
 //                .csrf(AbstractHttpConfigurer::disable);
@@ -107,7 +109,7 @@ public class SecurityConfig {
 
 
         // 커스텀 JWT 필터 추가
-        http.addFilterBefore(new JwtFilter(jwtTokenProvider, tokenRotationService), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(new JwtFilter(jwtTokenProvider, tokenRotationService, jwtCookieProvider), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
