@@ -2,7 +2,6 @@ package com.ssafy.logoserver.domain.travel.service;
 
 import com.ssafy.logoserver.domain.area.entity.Area;
 import com.ssafy.logoserver.domain.area.entity.Place;
-import com.ssafy.logoserver.domain.area.entity.PlacePK;
 import com.ssafy.logoserver.domain.area.repository.AreaRepository;
 import com.ssafy.logoserver.domain.area.repository.PlaceRepository;
 import com.ssafy.logoserver.domain.travel.dto.TravelAreaDto;
@@ -183,7 +182,7 @@ public class TravelAreaService {
 
         // Place 찾기 또는 생성
         Place place = findOrCreatePlace(requestDto);
-        log.info("장소 처리 완료 - puid: {}, address: {}", place.getPk().getPuid(), place.getPk().getAddress());
+        log.info("장소 처리 완료 - puid: {}, address: {}", place.getPuid(), place.getAddress());
 
         // 여행 지역 엔티티 생성
         TravelArea travelArea = TravelArea.builder()
@@ -214,8 +213,8 @@ public class TravelAreaService {
 
         // 같은 주소를 가진 장소 찾기
         for (Place place : places) {
-            if (place.getPk().getAddress().equals(requestDto.getAddress())) {
-                log.info("기존 장소 발견 - puid: {}, address: {}", place.getPk().getPuid(), place.getPk().getAddress());
+            if (place.getAddress().equals(requestDto.getAddress())) {
+                log.info("기존 장소 발견 - puid: {}, address: {}", place.getPuid(), place.getAddress());
                 return place;
             }
         }
@@ -231,13 +230,9 @@ public class TravelAreaService {
             log.info("지역 정보 조회 - auid: {}", area.getAuid());
         }
 
-        // 새 장소 생성
-        PlacePK placePK = PlacePK.builder()
-                .address(requestDto.getAddress())
-                .build();
 
         Place newPlace = Place.builder()
-                .pk(placePK)
+                .address(requestDto.getAddress())
                 .area(area)
                 .name(requestDto.getName())
                 .latitude(requestDto.getLatitude())
@@ -245,7 +240,7 @@ public class TravelAreaService {
                 .build();
 
         Place savedPlace = placeRepository.save(newPlace);
-        log.info("새 장소 생성 완료 - puid: {}, address: {}", savedPlace.getPk().getPuid(), savedPlace.getPk().getAddress());
+        log.info("새 장소 생성 완료 - puid: {}, address: {}", savedPlace.getPuid(), savedPlace.getAddress());
 
         return savedPlace;
     }

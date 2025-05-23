@@ -1,10 +1,7 @@
 package com.ssafy.logoserver.domain.travel.service;
 
-import com.ssafy.logoserver.domain.area.dto.AreaDto;
 import com.ssafy.logoserver.domain.area.dto.PlaceDto;
-import com.ssafy.logoserver.domain.area.entity.Area;
 import com.ssafy.logoserver.domain.area.entity.Place;
-import com.ssafy.logoserver.domain.area.entity.PlacePK;
 import com.ssafy.logoserver.domain.area.repository.AreaRepository;
 import com.ssafy.logoserver.domain.area.repository.PlaceRepository;
 import com.ssafy.logoserver.domain.travel.dto.TravelAreaDto;
@@ -166,8 +163,7 @@ public class TravelRootService {
                     .orElse(null);
             if (user != null) {
                 for (PlaceDto place : places) {
-                    PlacePK placePK = new PlacePK(place.getPuid(), place.getAddress());
-                    Place placeEntity = placeRepository.findById(placePK).orElse(null);
+                    Place placeEntity = placeRepository.findById(place.getPuid()).orElse(null);
                     if (placeEntity != null) {
                         verificationRepository.findByUserAndPlace(user, placeEntity)
                                 .map(VerificationDto::fromEntity)

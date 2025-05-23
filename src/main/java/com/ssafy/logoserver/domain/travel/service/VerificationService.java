@@ -1,7 +1,6 @@
 package com.ssafy.logoserver.domain.travel.service;
 
 import com.ssafy.logoserver.domain.area.entity.Place;
-import com.ssafy.logoserver.domain.area.entity.PlacePK;
 import com.ssafy.logoserver.domain.area.repository.PlaceRepository;
 import com.ssafy.logoserver.domain.image.entity.TravelImage;
 import com.ssafy.logoserver.domain.image.repository.TravelImageRepository;
@@ -72,8 +71,7 @@ public class VerificationService {
      * 장소별 인증 정보 조회
      */
     public List<VerificationDto> getVerificationsByPlace(Long placeId, String placeAddress) {
-        PlacePK placePK = new PlacePK(placeId, placeAddress);
-        Place place = placeRepository.findById(placePK)
+        Place place = placeRepository.findById(placeId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 장소가 존재하지 않습니다: " + placeId + ", " + placeAddress));
 
         return verificationRepository.findByPlace(place).stream()
@@ -88,8 +86,7 @@ public class VerificationService {
         User user = userRepository.findByUuid(userId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자가 존재하지 않습니다: " + userId));
 
-        PlacePK placePK = new PlacePK(placeId, placeAddress);
-        Place place = placeRepository.findById(placePK)
+        Place place = placeRepository.findById(placeId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 장소가 존재하지 않습니다: " + placeId + ", " + placeAddress));
 
         Verification verification = verificationRepository.findByUserAndPlace(user, place)
@@ -113,8 +110,7 @@ public class VerificationService {
                 .orElseThrow(() -> new IllegalArgumentException("로그인이 필요합니다."));
 
         // 장소 확인
-        PlacePK placePK = new PlacePK(requestDto.getPid(), requestDto.getAddress());
-        Place place = placeRepository.findById(placePK)
+        Place place = placeRepository.findById(requestDto.getPid())
                 .orElseThrow(() -> new IllegalArgumentException("해당 장소가 존재하지 않습니다."));
 
         // 인증 정보 생성

@@ -17,8 +17,12 @@ import java.util.List;
 @Builder
 public class Place {
 
-    @EmbeddedId
-    private PlacePK pk;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long puid;
+
+    @Column(nullable = false, unique = true)
+    private String address;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "area_id", nullable = false)

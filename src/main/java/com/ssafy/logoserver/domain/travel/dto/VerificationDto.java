@@ -1,7 +1,6 @@
 package com.ssafy.logoserver.domain.travel.dto;
 
 import com.ssafy.logoserver.domain.area.entity.Place;
-import com.ssafy.logoserver.domain.area.entity.PlacePK;
 import com.ssafy.logoserver.domain.travel.entity.Verification;
 import com.ssafy.logoserver.domain.user.entity.User;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -40,8 +39,8 @@ public class VerificationDto {
         return VerificationDto.builder()
                 .vuid(verification.getVuid())
                 .userId(verification.getUser().getUuid())
-                .placeId(place != null ? place.getPk().getPuid() : null)
-                .placeAddress(place != null ? place.getPk().getAddress() : null)
+                .placeId(place != null ? place.getPuid() : null)
+                .placeAddress(place != null ? place.getAddress() : null)
                 .star(verification.getStar())
                 .review(verification.getReview())
                 .build();
