@@ -96,8 +96,8 @@ public class SecurityConfig {
                         // 정적 리소스 접근 허용
                         .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
                         // 나머지 API는 인증 필요
-//                        .requestMatchers("/api/**").authenticated()
-                        .requestMatchers("/api/**").permitAll()
+                        .requestMatchers("/api/**").authenticated()
+//                        .requestMatchers("/api/**").permitAll()
                         // 관리자 API는 ADMIN 역할 필요
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         // 그 외 모든 요청은 인증 필요
