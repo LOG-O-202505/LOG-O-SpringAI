@@ -69,7 +69,7 @@ public class UserService {
     }
 
     /**
-     * 사용자 프로필 업데이트 (닉네임, 프로필 이미지, 노션 페이지 ID)
+     * 사용자 프로필 업데이트 (닉네임, 생년월일, 노션 페이지 ID)
      */
     @Transactional
     public UserDto updateUserProfile(String userId, UserProfileUpdateDto updateDto) {
@@ -95,7 +95,7 @@ public class UserService {
                 .gender(user.getGender())
                 .nickname(updateDto.getNickname() != null ? updateDto.getNickname() : user.getNickname())
                 .birthday(user.getBirthday())
-                .profileImage(updateDto.getProfileImage() != null ? updateDto.getProfileImage() : user.getProfileImage())
+                .profileImage(user.getProfileImage() != null ? user.getProfileImage() : user.getProfileImage())
                 .provider(user.getProvider())
                 .providerId(user.getProviderId())
                 .role(user.getRole())
