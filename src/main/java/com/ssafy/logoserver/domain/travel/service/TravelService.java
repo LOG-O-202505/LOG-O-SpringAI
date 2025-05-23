@@ -1,8 +1,13 @@
 package com.ssafy.logoserver.domain.travel.service;
 
+import com.ssafy.logoserver.domain.image.dto.TravelImageDto;
+import com.ssafy.logoserver.domain.image.repository.TravelImageRepository;
 import com.ssafy.logoserver.domain.travel.dto.TravelCreateDto;
+import com.ssafy.logoserver.domain.travel.dto.TravelDetailDto;
 import com.ssafy.logoserver.domain.travel.dto.TravelDto;
+import com.ssafy.logoserver.domain.travel.dto.TravelPaymentDto;
 import com.ssafy.logoserver.domain.travel.entity.Travel;
+import com.ssafy.logoserver.domain.travel.repository.TravelPaymentRepository;
 import com.ssafy.logoserver.domain.travel.repository.TravelRepository;
 import com.ssafy.logoserver.domain.user.entity.User;
 import com.ssafy.logoserver.domain.user.repository.UserRepository;
@@ -21,6 +26,8 @@ import java.util.stream.Collectors;
 public class TravelService {
 
     private final TravelRepository travelRepository;
+    private final TravelImageRepository travelImageRepository;
+    private final TravelPaymentRepository travelPaymentRepository;
     private final UserRepository userRepository;
 
     /**
@@ -166,5 +173,28 @@ public class TravelService {
         }
 
         travelRepository.delete(travel);
+    }
+
+    /**
+     * 여행 상세 정보 조회 (연관 데이터 모두 포함)
+     */
+    @Transactional
+    public TravelDetailDto getTravelDetailById(Long tuid) {
+        // 여행 정보 조회
+        Travel travel = travelRepository.findById(tuid)
+                .orElseThrow(() -> new IllegalArgumentException("해당 여행이 존재하지 않습니다: " + tuid));
+
+        // 여행 이미지 조회
+        List<TravelImageDto> travelImages = travelImageRepository.findByTravel(travel).stream()
+                .map(TravelImageDto::fromEntity)
+                .collect(Collectors.toList());
+
+        // 여행 결제 정보 조회
+        List<TravelPaymentDto> travelPayments = travelPaymentRepository.findByTravel(travel).stream()
+                .map(TravelPaymentDto::fromEntity)
+                .collect(Collectors.toList());
+
+        // 상세 DTO 생성 및 반환
+        return TravelDetailDto.fromEntity(travel, travelImages, travelPayments);
     }
 }

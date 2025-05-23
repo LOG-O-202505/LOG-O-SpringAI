@@ -1,5 +1,6 @@
 package com.ssafy.logoserver.controller;
 
+import com.ssafy.logoserver.domain.travel.dto.TravelRootDetailDto;
 import com.ssafy.logoserver.domain.travel.dto.TravelRootDto;
 import com.ssafy.logoserver.domain.travel.service.TravelRootService;
 import com.ssafy.logoserver.utils.ResponseUtil;
@@ -10,8 +11,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -22,6 +25,7 @@ import java.util.Map;
 @RequestMapping("/api/travel-roots")
 @RequiredArgsConstructor
 @Tag(name = "Travel Root API", description = "여행 루트 관리 API")
+@Slf4j
 public class TravelRootController {
 
     private final TravelRootService travelRootService;
@@ -161,6 +165,28 @@ public class TravelRootController {
             return ResponseUtil.notFound(e.getMessage());
         } catch (Exception e) {
             return ResponseUtil.internalServerError("여행 루트 삭제 중 오류가 발생했습니다: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{truid}/detail")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "여행 루트 상세 정보 조회", description = "여행 루트의 모든 상세 정보와 연관 데이터를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
+            @ApiResponse(responseCode = "404", description = "여행 루트를 찾을 수 없음", content = @Content)
+    })
+    public ResponseEntity<Map<String, Object>> getTravelRootDetail(
+            @Parameter(description = "여행 루트 ID", required = true)
+            @PathVariable Long truid) {
+        try {
+            TravelRootDetailDto travelRootDetail = travelRootService.getTravelRootDetailById(truid);
+            return ResponseUtil.success(travelRootDetail);
+        } catch (IllegalArgumentException e) {
+            return ResponseUtil.notFound(e.getMessage());
+        } catch (Exception e) {
+            log.error("여행 루트 상세 정보 조회 중 오류 발생", e);
+            return ResponseUtil.internalServerError("여행 루트 상세 정보 조회 중 오류가 발생했습니다: " + e.getMessage());
         }
     }
 }

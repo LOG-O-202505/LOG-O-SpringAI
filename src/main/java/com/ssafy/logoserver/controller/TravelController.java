@@ -1,6 +1,7 @@
 package com.ssafy.logoserver.controller;
 
 import com.ssafy.logoserver.domain.travel.dto.TravelCreateDto;
+import com.ssafy.logoserver.domain.travel.dto.TravelDetailDto;
 import com.ssafy.logoserver.domain.travel.dto.TravelDto;
 import com.ssafy.logoserver.domain.travel.service.TravelService;
 import com.ssafy.logoserver.domain.user.service.UserService;
@@ -218,6 +219,28 @@ public class TravelController {
             return ResponseUtil.notFound(e.getMessage());
         } catch (Exception e) {
             return ResponseUtil.internalServerError("여행 삭제 중 오류가 발생했습니다: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{tuid}/detail")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "여행 상세 정보 조회", description = "여행의 모든 상세 정보와 연관 데이터를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
+            @ApiResponse(responseCode = "404", description = "여행을 찾을 수 없음", content = @Content)
+    })
+    public ResponseEntity<Map<String, Object>> getTravelDetail(
+            @Parameter(description = "여행 ID", required = true)
+            @PathVariable Long tuid) {
+        try {
+            TravelDetailDto travelDetail = travelService.getTravelDetailById(tuid);
+            return ResponseUtil.success(travelDetail);
+        } catch (IllegalArgumentException e) {
+            return ResponseUtil.notFound(e.getMessage());
+        } catch (Exception e) {
+            log.error("여행 상세 정보 조회 중 오류 발생", e);
+            return ResponseUtil.internalServerError("여행 상세 정보 조회 중 오류가 발생했습니다: " + e.getMessage());
         }
     }
 }
