@@ -172,7 +172,7 @@ public class TravelAreaService {
 
         // 현재 로그인한 사용자 확인
         String currentUserId = SecurityUtil.getCurrentUserId();
-        User user = userRepository.findByUserId(currentUserId)
+        User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new IllegalArgumentException("로그인이 필요합니다."));
 
         // 권한 확인 (여행 작성자만 추가 가능)

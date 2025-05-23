@@ -79,7 +79,7 @@ public class TravelService {
      * 특정 사용자의 여행 목록 조회
      */
     public List<TravelDto> getTravelsByUserId(String userId) {
-        User user = userRepository.findByUserId(userId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자 ID가 존재하지 않습니다: " + userId));
 
         return travelRepository.findByUser(user).stream()
@@ -114,7 +114,7 @@ public class TravelService {
     @Transactional
     public TravelDto createTravelFromDto(String userId, TravelCreateDto createDto) {
         // 사용자 정보 조회
-        User user = userRepository.findByUserId(userId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자 ID가 존재하지 않습니다: " + userId));
 
         log.info("새로운 여행 생성 - 사용자: {}, 제목: {}", user.getNickname(), createDto.getTitle());
@@ -214,7 +214,7 @@ public class TravelService {
      */
     @Transactional
     public TravelDto createTravel(TravelDto travelDto, String userId) {
-        User user = userRepository.findByUserId(userId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자 ID가 존재하지 않습니다: " + userId));
 
         Travel travel = travelDto.toEntity(user);

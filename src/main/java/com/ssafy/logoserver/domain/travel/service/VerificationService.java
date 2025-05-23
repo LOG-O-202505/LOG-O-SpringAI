@@ -106,7 +106,7 @@ public class VerificationService {
 
         // 현재 로그인한 사용자 확인
         String currentUserId = SecurityUtil.getCurrentUserId();
-        User user = userRepository.findByUserId(currentUserId)
+        User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new IllegalArgumentException("로그인이 필요합니다."));
 
         // 장소 확인

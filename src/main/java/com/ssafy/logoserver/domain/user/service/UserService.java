@@ -46,7 +46,7 @@ public class UserService {
      * id로 유저 조회
      */
     public UserDto getUserByLoginId(String id) {
-        User user = userRepository.findByUserId(id)
+        User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자 ID가 존재하지 않습니다: " + id));
         return UserDto.fromEntity(user);
     }
@@ -55,7 +55,7 @@ public class UserService {
      * id로 유저 엔티티 조회 (내부 사용용)
      */
     public User getUserEntityByLoginId(String id) {
-        return userRepository.findByUserId(id)
+        return userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자 ID가 존재하지 않습니다: " + id));
     }
 
@@ -73,7 +73,7 @@ public class UserService {
      */
     @Transactional
     public UserDto updateUserProfile(String userId, UserProfileUpdateDto updateDto) {
-        User user = userRepository.findByUserId(userId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자 ID가 존재하지 않습니다: " + userId));
 
         log.info("사용자 프로필 업데이트 시작 - 사용자 ID: {}", userId);
@@ -231,7 +231,7 @@ public class UserService {
     @Transactional
     public UserDto processOAuthUser(String provider, String providerId, String email, String name, String profileImage) {
         // OAuth2 로그인 ID 생성 (provider_providerId 형식)
-        Optional<User> existingUser = userRepository.findByUserId(providerId);
+        Optional<User> existingUser = userRepository.findById(providerId);
         User user;
 
         if (existingUser.isPresent()) {

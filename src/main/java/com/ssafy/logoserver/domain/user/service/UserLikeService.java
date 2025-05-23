@@ -2,7 +2,6 @@ package com.ssafy.logoserver.domain.user.service;
 
 import com.ssafy.logoserver.domain.area.entity.Place;
 import com.ssafy.logoserver.domain.travel.dto.TravelDto;
-import com.ssafy.logoserver.domain.travel.entity.Travel;
 import com.ssafy.logoserver.domain.travel.entity.TravelArea;
 import com.ssafy.logoserver.domain.user.dto.UserLikeDetailDto;
 import com.ssafy.logoserver.domain.user.entity.User;
@@ -74,7 +73,7 @@ public class UserLikeService {
             throw new IllegalArgumentException("로그인이 필요합니다.");
         }
 
-        User user = userRepository.findByUserId(currentUserId)
+        User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자를 찾을 수 없습니다."));
 
         return userLikeRepository.findByUser(user).stream()
