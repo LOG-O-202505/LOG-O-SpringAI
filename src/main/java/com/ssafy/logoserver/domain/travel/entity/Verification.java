@@ -5,6 +5,7 @@ import com.ssafy.logoserver.domain.image.entity.TravelImage;
 import com.ssafy.logoserver.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -15,6 +16,7 @@ import java.util.List;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 @Table(name = "verifications")
 public class Verification {
 

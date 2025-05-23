@@ -1,6 +1,7 @@
 package com.ssafy.logoserver.controller;
 
 import com.ssafy.logoserver.domain.travel.dto.TravelAreaDto;
+import com.ssafy.logoserver.domain.travel.dto.TravelAreaRequestDto;
 import com.ssafy.logoserver.domain.travel.service.TravelAreaService;
 import com.ssafy.logoserver.utils.ResponseUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,7 +11,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +23,7 @@ import java.util.Map;
 @RequestMapping("/api/travel-areas")
 @RequiredArgsConstructor
 @Tag(name = "Travel Area API", description = "여행 지역 관리 API")
+@Slf4j
 public class TravelAreaController {
 
     private final TravelAreaService travelAreaService;
@@ -132,10 +136,48 @@ public class TravelAreaController {
         }
     }
 
+    /**
+     * 여행 지역 추가 (장소 확인 및 생성 포함)
+     */
+    @PostMapping("/add")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "여행 지역 추가", description = "여행 지역을 추가하고 필요시 새로운 장소를 생성합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "추가 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청", content = @Content),
+            @ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
+            @ApiResponse(responseCode = "403", description = "권한 없음", content = @Content),
+            @ApiResponse(responseCode = "500", description = "서버 오류", content = @Content)
+    })
+    public ResponseEntity<Map<String, Object>> addTravelArea(
+            @Parameter(description = "여행 지역 추가 정보", required = true)
+            @RequestBody TravelAreaRequestDto requestDto) {
+        try {
+            log.info("여행 지역 추가 요청 - travel_id: {}, address: {}", requestDto.getTravel_id(), requestDto.getAddress());
+            TravelAreaDto travelArea = travelAreaService.addTravelAreaWithPlace(requestDto);
+            return ResponseUtil.success(travelArea);
+        } catch (IllegalArgumentException e) {
+            log.error("여행 지역 추가 실패: {}", e.getMessage());
+            if (e.getMessage().contains("권한이 없습니다")) {
+                return ResponseUtil.error(org.springframework.http.HttpStatus.FORBIDDEN, e.getMessage());
+            }
+            return ResponseUtil.badRequest(e.getMessage());
+        } catch (Exception e) {
+            log.error("여행 지역 추가 중 오류 발생", e);
+            return ResponseUtil.internalServerError("여행 지역 추가 중 오류가 발생했습니다: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 여행 지역 삭제
+     */
     @DeleteMapping("/{tauid}")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "여행 지역 삭제", description = "ID로 특정 여행 지역을 삭제합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "삭제 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
+            @ApiResponse(responseCode = "403", description = "권한 없음", content = @Content),
             @ApiResponse(responseCode = "404", description = "여행 지역을 찾을 수 없음", content = @Content),
             @ApiResponse(responseCode = "500", description = "서버 오류", content = @Content)
     })
@@ -143,11 +185,17 @@ public class TravelAreaController {
             @Parameter(description = "여행 지역 ID", required = true)
             @PathVariable Long tauid) {
         try {
+            log.info("여행 지역 삭제 요청 - tauid: {}", tauid);
             travelAreaService.deleteTravelArea(tauid);
             return ResponseUtil.success();
         } catch (IllegalArgumentException e) {
+            log.error("여행 지역 삭제 실패: {}", e.getMessage());
+            if (e.getMessage().contains("권한이 없습니다")) {
+                return ResponseUtil.error(org.springframework.http.HttpStatus.FORBIDDEN, e.getMessage());
+            }
             return ResponseUtil.notFound(e.getMessage());
         } catch (Exception e) {
+            log.error("여행 지역 삭제 중 오류 발생", e);
             return ResponseUtil.internalServerError("여행 지역 삭제 중 오류가 발생했습니다: " + e.getMessage());
         }
     }
