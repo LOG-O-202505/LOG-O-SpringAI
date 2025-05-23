@@ -33,7 +33,6 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final JwtCookieProvider jwtCookieProvider;
     private final TokenRotationService tokenRotationService;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
@@ -49,11 +48,11 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtCookieProvider jwtCookieProvider) throws Exception {
         //csrf 공격 방어 설정
         http
-//                .csrf(AbstractHttpConfigurer::disable);
+                .csrf(AbstractHttpConfigurer::disable);
                 // CSRF는 쿠키 사용하므로 활성화 (주의: REST API에 맞게 설정)
-                .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/api/auth/login", "/api/auth/signup", "/api/auth/logout")
-                );
+//                .csrf(csrf -> csrf
+//                        .ignoringRequestMatchers("/api/auth/login", "/api/auth/signup", "/api/auth/logout")
+//                );
 
         //cors 방지 설정
         http
