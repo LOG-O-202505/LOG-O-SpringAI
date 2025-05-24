@@ -1,7 +1,9 @@
 package com.ssafy.logoserver.controller;
 
 import com.ssafy.logoserver.domain.travel.dto.TravelCreateDto;
+import com.ssafy.logoserver.domain.travel.dto.TravelDetailDto;
 import com.ssafy.logoserver.domain.travel.dto.TravelDto;
+import com.ssafy.logoserver.domain.travel.dto.TravelUpdateDto;
 import com.ssafy.logoserver.domain.travel.service.TravelService;
 import com.ssafy.logoserver.domain.user.service.UserService;
 import com.ssafy.logoserver.utils.ResponseUtil;
@@ -159,7 +161,7 @@ public class TravelController {
 
     @PutMapping("/{tuid}")
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "여행 정보 수정", description = "ID로 특정 여행의 정보를 수정합니다.")
+    @Operation(summary = "여행 정보 수정", description = "ID로 특정 여행의 기본 정보를 수정합니다. (위치, 제목, 인원수, 메모, 총예산만 수정 가능)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "수정 성공"),
             @ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
@@ -170,22 +172,33 @@ public class TravelController {
     public ResponseEntity<Map<String, Object>> updateTravel(
             @Parameter(description = "여행 ID", required = true)
             @PathVariable Long tuid,
-            @Parameter(description = "수정할 여행 정보", required = true)
-            @RequestBody TravelDto travelDto) {
+            @Parameter(description = "수정할 여행 기본 정보", required = true)
+            @RequestBody TravelUpdateDto updateDto) {
         try {
+            // 현재 로그인한 사용자 ID 조회
             String currentUserId = SecurityUtil.getCurrentUserId();
             if (currentUserId == null) {
                 return ResponseUtil.error(org.springframework.http.HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
             }
 
-            TravelDto updatedTravel = travelService.updateTravel(tuid, travelDto, currentUserId);
+            log.info("여행 정보 수정 요청 - 여행 ID: {}, 사용자 ID: {}, 수정 데이터: [제목: {}, 위치: {}, 인원: {}, 예산: {}]",
+                    tuid, currentUserId, updateDto.getTitle(), updateDto.getLocation(),
+                    updateDto.getPeoples(), updateDto.getTotalBudget());
+
+            // 여행 정보 수정 (새로운 메서드 사용)
+            TravelDto updatedTravel = travelService.updateTravelInfo(tuid, updateDto, currentUserId);
+
+            log.info("여행 정보 수정 완료 - 여행 ID: {}, 제목: [{}]", tuid, updatedTravel.getTitle());
+
             return ResponseUtil.success(updatedTravel);
         } catch (IllegalArgumentException e) {
+            log.error("여행 정보 수정 실패 - 여행 ID: {}, 오류: {}", tuid, e.getMessage());
             if (e.getMessage().contains("권한이 없습니다")) {
                 return ResponseUtil.error(org.springframework.http.HttpStatus.FORBIDDEN, e.getMessage());
             }
             return ResponseUtil.notFound(e.getMessage());
         } catch (Exception e) {
+            log.error("여행 정보 수정 중 오류 발생 - 여행 ID: {}", tuid, e);
             return ResponseUtil.internalServerError("여행 정보 업데이트 중 오류가 발생했습니다: " + e.getMessage());
         }
     }
@@ -218,6 +231,28 @@ public class TravelController {
             return ResponseUtil.notFound(e.getMessage());
         } catch (Exception e) {
             return ResponseUtil.internalServerError("여행 삭제 중 오류가 발생했습니다: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{tuid}/detail")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "여행 상세 정보 조회", description = "여행의 모든 상세 정보와 연관 데이터를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
+            @ApiResponse(responseCode = "404", description = "여행을 찾을 수 없음", content = @Content)
+    })
+    public ResponseEntity<Map<String, Object>> getTravelDetail(
+            @Parameter(description = "여행 ID", required = true)
+            @PathVariable Long tuid) {
+        try {
+            TravelDetailDto travelDetail = travelService.getTravelDetailById(tuid);
+            return ResponseUtil.success(travelDetail);
+        } catch (IllegalArgumentException e) {
+            return ResponseUtil.notFound(e.getMessage());
+        } catch (Exception e) {
+            log.error("여행 상세 정보 조회 중 오류 발생", e);
+            return ResponseUtil.internalServerError("여행 상세 정보 조회 중 오류가 발생했습니다: " + e.getMessage());
         }
     }
 }

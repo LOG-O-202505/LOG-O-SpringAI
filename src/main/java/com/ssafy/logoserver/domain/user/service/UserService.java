@@ -69,14 +69,14 @@ public class UserService {
     }
 
     /**
-     * 사용자 프로필 업데이트 (닉네임, 프로필 이미지, 노션 페이지 ID)
+     * 사용자 프로필 업데이트 (닉네임, 생년월일, 노션 페이지 ID)
      */
     @Transactional
     public UserDto updateUserProfile(String userId, UserProfileUpdateDto updateDto) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자 ID가 존재하지 않습니다: " + userId));
 
-        log.info("사용자 프로필 업데이트 시작 - 사용자 ID: {}", userId);
+        log.info("사용자 프로필 업데이트 시작 - 사용자 ID: [{}], 현재 닉네임: [{}]", userId, user.getNickname());
 
         // 닉네임 중복 체크 (변경하는 경우에만)
         if (updateDto.getNickname() != null &&
@@ -94,8 +94,8 @@ public class UserService {
                 .email(user.getEmail())
                 .gender(user.getGender())
                 .nickname(updateDto.getNickname() != null ? updateDto.getNickname() : user.getNickname())
-                .birthday(user.getBirthday())
-                .profileImage(updateDto.getProfileImage() != null ? updateDto.getProfileImage() : user.getProfileImage())
+                .birthday(updateDto.getBirthday() != null ? updateDto.getBirthday() : user.getBirthday())
+                .profileImage(user.getProfileImage())
                 .provider(user.getProvider())
                 .providerId(user.getProviderId())
                 .role(user.getRole())
@@ -105,12 +105,11 @@ public class UserService {
 
         User savedUser = userRepository.save(updatedUser);
 
-        log.info("사용자 프로필 업데이트 완료 - 사용자 ID: {}, 닉네임: {}",
-                userId, savedUser.getNickname());
+        log.info("사용자 프로필 업데이트 완료 - 사용자 ID: [{}], 새 닉네임: [{}], 생년월일: [{}]",
+                userId, savedUser.getNickname(), savedUser.getBirthday());
 
         return UserDto.fromEntity(savedUser);
     }
-
     /**
      * 회원 가입
      */
@@ -231,9 +230,7 @@ public class UserService {
     @Transactional
     public UserDto processOAuthUser(String provider, String providerId, String email, String name, String profileImage) {
         // OAuth2 로그인 ID 생성 (provider_providerId 형식)
-        String oAuthId = provider + "_" + providerId;
-
-        Optional<User> existingUser = userRepository.findById(oAuthId);
+        Optional<User> existingUser = userRepository.findById(providerId);
         User user;
 
         if (existingUser.isPresent()) {
@@ -242,7 +239,7 @@ public class UserService {
             // 이메일, 이름, 프로필 이미지 업데이트
             User updatedUser = User.builder()
                     .uuid(user.getUuid())
-                    .id(oAuthId)
+                    .id(providerId)
                     .password(user.getPassword())
                     .name(name)
                     .nickname(user.getNickname())
@@ -259,7 +256,7 @@ public class UserService {
         } else {
             // 새 사용자 등록
             User newUser = User.builder()
-                    .id(oAuthId)
+                    .id(providerId)
                     .name(name)
                     .nickname(name) // 닉네임은 이름으로 초기화
                     .email(email)

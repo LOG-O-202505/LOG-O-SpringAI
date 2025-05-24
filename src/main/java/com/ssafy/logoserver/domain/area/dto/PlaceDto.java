@@ -34,8 +34,8 @@ public class PlaceDto {
 
     public static PlaceDto fromEntity(Place place) {
         return PlaceDto.builder()
-                .puid(place.getPk().getPuid())
-                .address(place.getPk().getAddress())
+                .puid(place.getPuid())
+                .address(place.getAddress())
                 .areaId(place.getArea() != null ? place.getArea().getAuid() : null)
                 .name(place.getName())
                 .latitude(place.getLatitude())

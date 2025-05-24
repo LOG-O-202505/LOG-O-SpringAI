@@ -17,7 +17,6 @@ import java.time.LocalDate;
 public class TravelRootDto {
     private Long truid;
     private Long travelId;
-    private Long areaId;
     private Integer day;
     private LocalDate travelDate;
 
@@ -25,16 +24,14 @@ public class TravelRootDto {
         return TravelRootDto.builder()
                 .truid(travelRoot.getTruid())
                 .travelId(travelRoot.getTravel().getTuid())
-                .areaId(travelRoot.getArea().getAuid())
                 .day(travelRoot.getDay())
                 .travelDate(travelRoot.getTravelDate())
                 .build();
     }
 
-    public TravelRoot toEntity(Travel travel, Area area) {
+    public TravelRoot toEntity(Travel travel) {
         return TravelRoot.builder()
                 .travel(travel)
-                .area(area)
                 .day(day)
                 .travelDate(travelDate)
                 .build();

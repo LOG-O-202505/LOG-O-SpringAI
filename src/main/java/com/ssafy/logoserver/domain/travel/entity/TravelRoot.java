@@ -27,9 +27,6 @@ public class TravelRoot {
     @JoinColumn(name = "travel_id", nullable = false)
     private Travel travel;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "area_id", nullable = false)
-    private Area area;
 
     private Integer day;
 

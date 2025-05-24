@@ -285,10 +285,11 @@ public class UserController {
         try {
             String currentUserId = SecurityUtil.getCurrentUserId();
             if (currentUserId == null) {
+                log.error("인증되지 않은 사용자의 프로필 수정 시도");
                 return ResponseUtil.error(org.springframework.http.HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
             }
 
-            log.info("사용자 프로필 수정 요청 - 사용자 ID: {}, 수정 정보: {}",
+            log.info("사용자 프로필 수정 요청 - 사용자 ID: [{}], 수정 정보: [닉네임: {}]",
                     currentUserId, updateDto.getNickname());
 
             // 프로필 업데이트

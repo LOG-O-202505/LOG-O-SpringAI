@@ -3,7 +3,6 @@ package com.ssafy.logoserver.domain.area.service;
 import com.ssafy.logoserver.domain.area.dto.PlaceDto;
 import com.ssafy.logoserver.domain.area.entity.Area;
 import com.ssafy.logoserver.domain.area.entity.Place;
-import com.ssafy.logoserver.domain.area.entity.PlacePK;
 import com.ssafy.logoserver.domain.area.repository.AreaRepository;
 import com.ssafy.logoserver.domain.area.repository.PlaceRepository;
 import lombok.RequiredArgsConstructor;
@@ -36,8 +35,7 @@ public class PlaceService {
      * 특정 장소 조회
      */
     public PlaceDto getPlaceById(Long puid, String address) {
-        PlacePK placePK = new PlacePK(puid, address);
-        Place place = placeRepository.findById(placePK)
+        Place place = placeRepository.findById(puid)
                 .orElseThrow(() -> new IllegalArgumentException("해당 장소가 존재하지 않습니다: " + puid + ", " + address));
         return PlaceDto.fromEntity(place);
     }

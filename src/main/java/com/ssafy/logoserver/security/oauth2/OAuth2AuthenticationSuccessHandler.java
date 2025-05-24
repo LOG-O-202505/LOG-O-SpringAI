@@ -114,7 +114,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
             // Only set is_new_user cookie if user actually needs onboarding
             if (Boolean.TRUE.equals(isNewUser)) {
-                addOnboardingCookie(response, "is_new_user", "true", 30 * 60); // 30 minutes
+                addOnboardingCookie(response, "is_new_user", "true", 2 * 60); // 2 minutes
                 log.info("Added is_new_user cookie for user requiring onboarding");
             } else {
                 // Ensure the cookie is cleared if user doesn't need onboarding

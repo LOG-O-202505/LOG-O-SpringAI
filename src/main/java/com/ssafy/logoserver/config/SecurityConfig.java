@@ -1,5 +1,6 @@
 package com.ssafy.logoserver.config;
 
+import com.ssafy.logoserver.security.jwt.JwtCookieProvider;
 import com.ssafy.logoserver.security.jwt.JwtFilter;
 import com.ssafy.logoserver.security.jwt.JwtTokenProvider;
 import com.ssafy.logoserver.security.jwt.TokenRotationService;
@@ -44,22 +45,19 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtCookieProvider jwtCookieProvider) throws Exception {
         //csrf 공격 방어 설정
         http
-//                .csrf(AbstractHttpConfigurer::disable);
+                .csrf(AbstractHttpConfigurer::disable);
                 // CSRF는 쿠키 사용하므로 활성화 (주의: REST API에 맞게 설정)
-                .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/api/auth/login", "/api/auth/signup", "/api/auth/logout")
-                );
+//                .csrf(csrf -> csrf
+//                        .ignoringRequestMatchers("/api/auth/login", "/api/auth/signup", "/api/auth/logout")
+//                );
 
         //cors 방지 설정
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()));
 
-        //Form 로그인 방식 disable 설정
-        http
-                .formLogin(AbstractHttpConfigurer::disable);
 
         //HTTP Basic 인증 방식 disable
         http
@@ -96,8 +94,8 @@ public class SecurityConfig {
                         // 정적 리소스 접근 허용
                         .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
                         // 나머지 API는 인증 필요
-//                        .requestMatchers("/api/**").authenticated()
-                        .requestMatchers("/api/**").permitAll()
+                        .requestMatchers("/api/**").authenticated()
+//                        .requestMatchers("/api/**").permitAll()
                         // 관리자 API는 ADMIN 역할 필요
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         // 그 외 모든 요청은 인증 필요
@@ -107,7 +105,7 @@ public class SecurityConfig {
 
 
         // 커스텀 JWT 필터 추가
-        http.addFilterBefore(new JwtFilter(jwtTokenProvider, tokenRotationService), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(new JwtFilter(jwtTokenProvider, tokenRotationService, jwtCookieProvider), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

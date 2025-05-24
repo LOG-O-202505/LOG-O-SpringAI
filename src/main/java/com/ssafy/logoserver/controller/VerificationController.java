@@ -1,6 +1,7 @@
 package com.ssafy.logoserver.controller;
 
 import com.ssafy.logoserver.domain.travel.dto.VerificationDto;
+import com.ssafy.logoserver.domain.travel.dto.VerificationRequestDto;
 import com.ssafy.logoserver.domain.travel.service.VerificationService;
 import com.ssafy.logoserver.utils.ResponseUtil;
 import com.ssafy.logoserver.utils.SecurityUtil;
@@ -11,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +24,7 @@ import java.util.Map;
 @RequestMapping("/api/verifications")
 @RequiredArgsConstructor
 @Tag(name = "Verification API", description = "위치 인증 관리 API")
+@Slf4j
 public class VerificationController {
 
     private final VerificationService verificationService;
@@ -111,5 +114,31 @@ public class VerificationController {
         }
     }
 
-    // 추가적인 메서드 구현 필요
+    /**
+     * 장소 방문 인증
+     */
+    @PostMapping("/verify")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "장소 방문 인증", description = "특정 장소에 대한 방문 인증을 추가합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "인증 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청", content = @Content),
+            @ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
+            @ApiResponse(responseCode = "500", description = "서버 오류", content = @Content)
+    })
+    public ResponseEntity<Map<String, Object>> verifyPlace(
+            @Parameter(description = "방문 인증 정보", required = true)
+            @RequestBody VerificationRequestDto requestDto) {
+        try {
+            log.info("장소 방문 인증 요청 - pid: {}, address: {}", requestDto.getPid(), requestDto.getAddress());
+            VerificationDto verification = verificationService.addVerification(requestDto);
+            return ResponseUtil.success(verification);
+        } catch (IllegalArgumentException e) {
+            log.error("방문 인증 실패: {}", e.getMessage());
+            return ResponseUtil.badRequest(e.getMessage());
+        } catch (Exception e) {
+            log.error("방문 인증 중 오류 발생", e);
+            return ResponseUtil.internalServerError("방문 인증 중 오류가 발생했습니다: " + e.getMessage());
+        }
+    }
 }
