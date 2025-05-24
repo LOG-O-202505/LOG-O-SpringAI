@@ -60,22 +60,27 @@ public class TravelDetailDto {
     @Schema(description = "여행 결제 목록")
     private List<TravelPaymentDto> travelPayments;
 
-    @Schema(description = "여행 지역 목록")
+    @Schema(description = "여행 지역 목록 (기본 형태, 장소 정보 없이)")
     private List<TravelAreaDto> travelAreas;
 
     /**
      * Travel 엔티티로부터 상세 DTO 생성
+     * 기존 fromEntity 메서드를 유지하여 하위 호환성 보장
+     * @param travel 여행 엔티티
+     * @param travelImages 여행 이미지 DTO 리스트
+     * @param travelPayments 여행 결제 DTO 리스트
+     * @return 변환된 상세 DTO
      */
     public static TravelDetailDto fromEntity(Travel travel,
                                              List<TravelImageDto> travelImages,
                                              List<TravelPaymentDto> travelPayments) {
 
-        // TravelRoot DTO 변환
+        // TravelRoot DTO 변환 (기본 변환)
         List<TravelRootDto> rootDtos = travel.getTravelRoots().stream()
                 .map(TravelRootDto::fromEntity)
                 .collect(Collectors.toList());
 
-        // TravelArea DTO 변환
+        // TravelArea DTO 변환 (기본 변환, 장소 정보 포함하지만 인증 정보는 제외)
         List<TravelAreaDto> areaDtos = travel.getTravelAreas().stream()
                 .map(TravelAreaDto::fromEntity)
                 .collect(Collectors.toList());
