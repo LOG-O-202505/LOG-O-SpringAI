@@ -1,5 +1,6 @@
 package com.ssafy.logoserver.domain.travel.service;
 
+import com.ssafy.logoserver.domain.area.dto.AreaDto;
 import com.ssafy.logoserver.domain.area.entity.Area;
 import com.ssafy.logoserver.domain.area.entity.Place;
 import com.ssafy.logoserver.domain.area.repository.AreaRepository;
@@ -180,14 +181,18 @@ public class TravelAreaService {
             throw new IllegalArgumentException("여행 지역 추가 권한이 없습니다.");
         }
 
+        // Area 찾기
+        Area area = findArea(requestDto.getRegion(), requestDto.getSig());
+        log.info("지역 처리 완료 - auid: {}", area.getAuid());
+
         // Place 찾기 또는 생성
-        Place place = findOrCreatePlace(requestDto);
+        Place place = findOrCreatePlace(requestDto, area);
         log.info("장소 처리 완료 - puid: {}, address: {}", place.getPuid(), place.getAddress());
 
         // 여행 지역 엔티티 생성
         TravelArea travelArea = TravelArea.builder()
                 .user(user)
-                .area(place.getArea())
+                .area(area)
                 .travel(travel)
                 .travelDay(travelRoot)
                 .startTime(requestDto.getStart())
@@ -205,7 +210,7 @@ public class TravelAreaService {
      * @param requestDto 여행 지역 요청 DTO
      * @return 찾거나 생성된 장소 엔티티
      */
-    private Place findOrCreatePlace(TravelAreaRequestDto requestDto) {
+    private Place findOrCreatePlace(TravelAreaRequestDto requestDto, Area area) {
         log.info("주소 기반 장소 찾기 시작 - address: {}", requestDto.getAddress());
 
         // 주소로 장소 찾기 시도
@@ -222,14 +227,6 @@ public class TravelAreaService {
         log.info("기존 장소 없음, 새 장소 생성 시작");
 
         // 없으면 새로 생성
-        // 지역 정보 조회
-        Area area = null;
-        if (requestDto.getRegion() != null && requestDto.getSig() != null) {
-            area = areaRepository.findById(requestDto.getRegion())
-                    .orElseThrow(() -> new IllegalArgumentException("해당 지역 정보가 존재하지 않습니다: " + requestDto.getRegion()));
-            log.info("지역 정보 조회 - auid: {}", area.getAuid());
-        }
-
 
         Place newPlace = Place.builder()
                 .address(requestDto.getAddress())
@@ -243,6 +240,13 @@ public class TravelAreaService {
         log.info("새 장소 생성 완료 - puid: {}, address: {}", savedPlace.getPuid(), savedPlace.getAddress());
 
         return savedPlace;
+    }
+
+    private Area findArea(Long region, Long sig) {
+        // region과 sig 값이 같은 지역 찾기
+        log.info("지역 정보 조회 - region: {}", region);
+        return areaRepository.findByRegionAndSig(region, sig)
+                .orElseThrow(() -> new IllegalArgumentException("해당 지역이 존재하지 않습니다" ));
     }
 
     /**

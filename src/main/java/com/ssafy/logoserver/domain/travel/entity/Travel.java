@@ -58,4 +58,7 @@ public class Travel {
 
     @OneToMany(mappedBy = "travel", cascade = CascadeType.ALL)
     private List<TravelImage> travelImages = new ArrayList<>();
+
+    @OneToMany(mappedBy = "travel", cascade = CascadeType.ALL)
+    private List<TravelPayment> travelPayments = new ArrayList<>();
 }
