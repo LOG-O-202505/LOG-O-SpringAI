@@ -56,11 +56,13 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
         OAuth2UserInfo oAuth2UserInfo = getOAuth2UserInfo(registrationId, oAuth2User.getAttributes());
 
+
         if (!StringUtils.hasText(oAuth2UserInfo.getEmail())) {
             throw new OAuth2AuthenticationException("Email not found from OAuth2 provider");
         }
 
         String providerId = oAuth2UserInfo.getId();
+        String provider = oAuth2UserInfo.getProvider();
         String email = oAuth2UserInfo.getEmail();
         String loginId = oAuth2UserInfo.getProvider() + "_" + providerId;
 
@@ -95,10 +97,34 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         log.info("OAuth2 user processing complete - isNewUser: {}, userId: {}", isNewUser, user.getUuid());
 
+        // Naver의 경우 response 객체를 사용하되, null 체크 추가
+        Map<String, Object> finalAttributes;
+        String nameAttributeKey;
+
+        if (registrationId.equalsIgnoreCase("naver")) {
+            Map<String, Object> response = (Map<String, Object>) attributes.get("response");
+            if (response != null) {
+                // response 객체에 추가 정보 넣기
+                response.put("isNewUser", isNewUser);
+                response.put("userId", user.getUuid());
+                finalAttributes = response;
+                nameAttributeKey = "id"; // Naver의 경우 response.id가 name attribute
+            } else {
+                // response가 null인 경우 전체 attributes 사용
+                finalAttributes = attributes;
+                nameAttributeKey = userRequest.getClientRegistration()
+                        .getProviderDetails().getUserInfoEndpoint().getUserNameAttributeName();
+            }
+        } else {
+            finalAttributes = attributes;
+            nameAttributeKey = userRequest.getClientRegistration()
+                    .getProviderDetails().getUserInfoEndpoint().getUserNameAttributeName();
+        }
+
         return new DefaultOAuth2User(
                 Collections.singleton(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())),
-                attributes,
-                userRequest.getClientRegistration().getProviderDetails().getUserInfoEndpoint().getUserNameAttributeName()
+                finalAttributes,
+                nameAttributeKey
         );
     }
 

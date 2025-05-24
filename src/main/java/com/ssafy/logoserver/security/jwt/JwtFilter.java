@@ -38,7 +38,9 @@ public class JwtFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(jwt)) {
             try {
                 if (tokenProvider.validateToken(jwt)) {
+                    // JWT에서 Authentication 객체 복원
                     Authentication authentication = tokenProvider.getAuthentication(jwt);
+                    // SecurityContextHolder에 인증 정보 설정
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                     log.debug("Set Authentication to security context for '{}', uri: {}", authentication.getName(), request.getRequestURI());
                 }
