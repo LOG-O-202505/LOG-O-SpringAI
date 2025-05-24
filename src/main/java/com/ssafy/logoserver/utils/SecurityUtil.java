@@ -2,6 +2,7 @@ package com.ssafy.logoserver.utils;
 
 import com.ssafy.logoserver.domain.user.entity.User;
 import com.ssafy.logoserver.domain.user.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @Component
+@Slf4j
 public class SecurityUtil {
 
     private static UserRepository userRepository;
@@ -30,6 +32,7 @@ public class SecurityUtil {
      */
     public static String getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        log.info("getCurrentUserId - authentication: {}", authentication);
 
         if (authentication == null || !authentication.isAuthenticated()) {
             return null;
@@ -38,9 +41,13 @@ public class SecurityUtil {
         // OAuth2 로그인인 경우
         if (authentication instanceof OAuth2AuthenticationToken) {
             OAuth2AuthenticationToken oauth2Token = (OAuth2AuthenticationToken) authentication;
+            log.info("getCurrentUserId - oauth2Token: {}", oauth2Token);
             String registrationId = oauth2Token.getAuthorizedClientRegistrationId();
+            log.info("getCurrentUserId - registrationId: {}", registrationId);
             OAuth2User oauth2User = oauth2Token.getPrincipal();
+            log.info("getCurrentUserId - oauth2User: {}", oauth2User);
             Map<String, Object> attributes = oauth2User.getAttributes();
+            log.info("getCurrentUserId - attributes: {}", attributes);
 
             return extractUserIdFromOAuth2Attributes(registrationId, attributes);
         }
@@ -64,11 +71,14 @@ public class SecurityUtil {
         switch (registrationId.toLowerCase()) {
             case "google":
                 // Google의 경우 'sub' 필드가 사용자 ID
+                log.info("extractUserIdFromOAuth2Attributes - attributes.get(\"sub\"): {}", attributes.get("sub"));
                 return (String) attributes.get("sub");
 
             case "naver":
                 // Naver의 경우 'response' 안의 'id' 필드가 사용자 ID
                 Map<String, Object> response = (Map<String, Object>) attributes.get("response");
+                log.info("extractUserIdFromOAuth2Attributes - response: {}", response);
+                log.info("extractUserIdFromOAuth2Attributes - response.get(\"id\"): {}", response.get("id"));
                 if (response != null) {
                     return (String) response.get("id");
                 }
@@ -77,6 +87,7 @@ public class SecurityUtil {
             case "kakao":
                 // Kakao의 경우 'id' 필드가 사용자 ID
                 Object kakaoId = attributes.get("id");
+                log.info("extractUserIdFromOAuth2Attributes - attributes.get(\"id\"): {}", kakaoId);
                 if (kakaoId != null) {
                     return kakaoId.toString();
                 }
