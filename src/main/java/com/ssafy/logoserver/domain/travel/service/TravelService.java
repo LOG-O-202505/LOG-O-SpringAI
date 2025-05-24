@@ -4,10 +4,7 @@ import com.ssafy.logoserver.domain.area.entity.Area;
 import com.ssafy.logoserver.domain.area.repository.AreaRepository;
 import com.ssafy.logoserver.domain.image.dto.TravelImageDto;
 import com.ssafy.logoserver.domain.image.repository.TravelImageRepository;
-import com.ssafy.logoserver.domain.travel.dto.TravelCreateDto;
-import com.ssafy.logoserver.domain.travel.dto.TravelDetailDto;
-import com.ssafy.logoserver.domain.travel.dto.TravelDto;
-import com.ssafy.logoserver.domain.travel.dto.TravelPaymentDto;
+import com.ssafy.logoserver.domain.travel.dto.*;
 import com.ssafy.logoserver.domain.travel.entity.Travel;
 import com.ssafy.logoserver.domain.travel.entity.TravelRoot;
 import com.ssafy.logoserver.domain.travel.repository.TravelPaymentRepository;
@@ -227,10 +224,14 @@ public class TravelService {
     }
 
     /**
-     * 여행 정보 수정
+     * 여행 정보 수정 (신규 메서드 - TravelUpdateDto 사용)
+     * 수정 가능한 필드만 업데이트: location, title, peoples, memo, totalBudget
      */
     @Transactional
-    public TravelDto updateTravel(Long tuid, TravelDto travelDto, String userId) {
+    public TravelDto updateTravelInfo(Long tuid, TravelUpdateDto updateDto, String userId) {
+        log.info("여행 정보 수정 요청 - 여행 ID: {}, 사용자 ID: {}", tuid, userId);
+
+        // 여행 정보 조회
         Travel travel = travelRepository.findById(tuid)
                 .orElseThrow(() -> new IllegalArgumentException("해당 여행이 존재하지 않습니다: " + tuid));
 
@@ -239,50 +240,32 @@ public class TravelService {
             throw new IllegalArgumentException("여행 수정 권한이 없습니다.");
         }
 
-        // 날짜 변경 확인
-        boolean dateChanged = false;
-        LocalDate newStartDate = travelDto.getStartDate() != null ? travelDto.getStartDate() : travel.getStartDate();
-        LocalDate newEndDate = travelDto.getEndDate() != null ? travelDto.getEndDate() : travel.getEndDate();
-
-        if (!newStartDate.equals(travel.getStartDate()) || !newEndDate.equals(travel.getEndDate())) {
-            dateChanged = true;
-            log.info("여행 날짜 변경 감지 - 기존: {} ~ {}, 신규: {} ~ {}",
-                    travel.getStartDate(), travel.getEndDate(), newStartDate, newEndDate);
-        }
+        log.info("여행 정보 수정 시작 - 기존 제목: [{}], 새 제목: [{}]",
+                travel.getTitle(), updateDto.getTitle());
 
         // 새로운 여행 정보 생성 (불변성 유지)
+        // 날짜 관련 필드는 수정하지 않음 (startDate, endDate 제외)
         Travel updatedTravel = Travel.builder()
                 .tuid(travel.getTuid())
                 .user(travel.getUser())
-                .location(travelDto.getLocation() != null ? travelDto.getLocation() : travel.getLocation())
-                .title(travelDto.getTitle() != null ? travelDto.getTitle() : travel.getTitle())
-                .startDate(newStartDate)
-                .endDate(newEndDate)
-                .peoples(travelDto.getPeoples() != null ? travelDto.getPeoples() : travel.getPeoples())
-                .memo(travelDto.getMemo() != null ? travelDto.getMemo() : travel.getMemo())
-                .totalBudget(travelDto.getTotalBudget() != null ? travelDto.getTotalBudget() : travel.getTotalBudget())
-                .created(travel.getCreated())
-                .travelRoots(travel.getTravelRoots())
-                .travelAreas(travel.getTravelAreas())
-                .travelImages(travel.getTravelImages())
+                .location(updateDto.getLocation() != null ? updateDto.getLocation() : travel.getLocation())
+                .title(updateDto.getTitle() != null ? updateDto.getTitle() : travel.getTitle())
+                .startDate(travel.getStartDate()) // 기존 값 유지
+                .endDate(travel.getEndDate()) // 기존 값 유지
+                .peoples(updateDto.getPeoples() != null ? updateDto.getPeoples() : travel.getPeoples())
+                .memo(updateDto.getMemo() != null ? updateDto.getMemo() : travel.getMemo())
+                .totalBudget(updateDto.getTotalBudget() != null ? updateDto.getTotalBudget() : travel.getTotalBudget())
+                .created(travel.getCreated()) // 생성일시 유지
+                .travelRoots(travel.getTravelRoots()) // 기존 연관관계 유지
+                .travelAreas(travel.getTravelAreas()) // 기존 연관관계 유지
+                .travelImages(travel.getTravelImages()) // 기존 연관관계 유지
                 .build();
 
         Travel savedTravel = travelRepository.save(updatedTravel);
 
-        // 날짜가 변경된 경우 기존 TravelRoot 삭제 후 새로 생성
-        if (dateChanged) {
-            log.info("날짜 변경으로 인한 여행 루트 재생성 시작");
-
-            // 기존 TravelRoot 삭제
-            List<TravelRoot> existingRoots = travelRootRepository.findByTravel(savedTravel);
-            if (!existingRoots.isEmpty()) {
-                log.info("기존 여행 루트 {}개 삭제", existingRoots.size());
-                travelRootRepository.deleteAll(existingRoots);
-            }
-
-            // 새로운 TravelRoot 생성
-            createTravelRootsForTravelPeriod(savedTravel);
-        }
+        log.info("여행 정보 수정 완료 - 여행 ID: {}, 제목: [{}], 위치: [{}], 인원: {}, 예산: {}",
+                savedTravel.getTuid(), savedTravel.getTitle(), savedTravel.getLocation(),
+                savedTravel.getPeoples(), savedTravel.getTotalBudget());
 
         return TravelDto.fromEntity(savedTravel);
     }
