@@ -9,6 +9,7 @@ import com.ssafy.logoserver.domain.travel.dto.TravelRootDetailDto;
 import com.ssafy.logoserver.domain.travel.dto.TravelRootDto;
 import com.ssafy.logoserver.domain.travel.dto.VerificationDto;
 import com.ssafy.logoserver.domain.travel.entity.Travel;
+import com.ssafy.logoserver.domain.travel.entity.TravelArea;
 import com.ssafy.logoserver.domain.travel.entity.TravelRoot;
 import com.ssafy.logoserver.domain.travel.repository.TravelAreaRepository;
 import com.ssafy.logoserver.domain.travel.repository.TravelRepository;
@@ -24,9 +25,15 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * 여행 루트 서비스
+ * 여행 루트 관련 비즈니스 로직을 처리하는 서비스 클래스
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -43,6 +50,7 @@ public class TravelRootService {
 
     /**
      * 모든 여행 루트 조회
+     * @return 모든 여행 루트 DTO 리스트
      */
     public List<TravelRootDto> getAllTravelRoots() {
         return travelRootRepository.findAll().stream()
@@ -52,6 +60,8 @@ public class TravelRootService {
 
     /**
      * 특정 여행 루트 조회
+     * @param truid 여행 루트 ID
+     * @return 여행 루트 DTO
      */
     public TravelRootDto getTravelRootById(Long truid) {
         TravelRoot travelRoot = travelRootRepository.findById(truid)
@@ -61,6 +71,8 @@ public class TravelRootService {
 
     /**
      * 특정 여행의 모든 루트 조회
+     * @param travelId 여행 ID
+     * @return 여행 루트 DTO 리스트
      */
     public List<TravelRootDto> getTravelRootsByTravelId(Long travelId) {
         Travel travel = travelRepository.findById(travelId)
@@ -73,6 +85,9 @@ public class TravelRootService {
 
     /**
      * 특정 여행의 특정 일자 루트 조회
+     * @param travelId 여행 ID
+     * @param day 여행 일차
+     * @return 여행 루트 DTO 리스트
      */
     public List<TravelRootDto> getTravelRootsByTravelAndDay(Long travelId, Integer day) {
         Travel travel = travelRepository.findById(travelId)
@@ -85,6 +100,8 @@ public class TravelRootService {
 
     /**
      * 특정 날짜의 여행 루트 조회
+     * @param date 조회할 날짜
+     * @return 여행 루트 DTO 리스트
      */
     public List<TravelRootDto> getTravelRootsByDate(LocalDate date) {
         return travelRootRepository.findByTravelDate(date).stream()
@@ -94,6 +111,8 @@ public class TravelRootService {
 
     /**
      * 여행 루트 생성
+     * @param travelRootDto 여행 루트 DTO
+     * @return 생성된 여행 루트 DTO
      */
     @Transactional
     public TravelRootDto createTravelRoot(TravelRootDto travelRootDto) {
@@ -106,6 +125,9 @@ public class TravelRootService {
 
     /**
      * 여행 루트 수정
+     * @param truid 여행 루트 ID
+     * @param travelRootDto 수정할 여행 루트 정보
+     * @return 수정된 여행 루트 DTO
      */
     @Transactional
     public TravelRootDto updateTravelRoot(Long truid, TravelRootDto travelRootDto) {
@@ -128,6 +150,7 @@ public class TravelRootService {
 
     /**
      * 여행 루트 삭제
+     * @param truid 여행 루트 ID
      */
     @Transactional
     public void deleteTravelRoot(Long truid) {
@@ -139,46 +162,54 @@ public class TravelRootService {
 
     /**
      * 여행 루트 상세 정보 조회 (연관 데이터 모두 포함)
+     * 이제 각 TravelArea에 연결된 Place 정보도 함께 조회
+     * @param truid 여행 루트 ID
+     * @return 여행 루트 상세 DTO
      */
     @Transactional
     public TravelRootDetailDto getTravelRootDetailById(Long truid) {
+        log.info("여행 루트 상세 정보 조회 시작 - truid: {}", truid);
+
         // 여행 루트 조회
         TravelRoot travelRoot = travelRootRepository.findById(truid)
                 .orElseThrow(() -> new IllegalArgumentException("해당 여행 루트가 존재하지 않습니다: " + truid));
 
-        // 여행 지역 목록 조회
+        // 여행 지역 목록 조회 (이제 각 TravelArea에 Place 정보가 포함됨)
         List<TravelAreaDto> travelAreas = travelAreaRepository.findByTravelDay(travelRoot).stream()
                 .map(TravelAreaDto::fromEntity)
                 .collect(Collectors.toList());
 
-        // 장소 목록 조회
-        List<PlaceDto> places = new ArrayList<>();
-        // 인증 목록 조회
+        log.info("여행 지역 조회 완료 - 지역 수: {}", travelAreas.size());
+
+        // 연결된 장소들 수집 (중복 제거)
+        List<Place> places = new ArrayList<>();
         List<VerificationDto> verifications = new ArrayList<>();
 
-        // 각 여행 지역에 연결된 장소와 인증 정보 수집
-        for (TravelAreaDto travelArea : travelAreas) {
-            // 사용자 ID와 장소 ID로 인증 정보 조회
-            User user = userRepository.findByUuid(travelArea.getUserId())
-                    .orElse(null);
-            if (user != null) {
-                for (PlaceDto place : places) {
-                    Place placeEntity = placeRepository.findById(place.getPuid()).orElse(null);
-                    if (placeEntity != null) {
-                        verificationRepository.findByUserAndPlace(user, placeEntity)
-                                .map(VerificationDto::fromEntity)
-                                .ifPresent(verifications::add);
-                    }
-                }
+        for (TravelArea travelArea : travelAreaRepository.findByTravelDay(travelRoot)) {
+            // 장소 정보 수집
+            if (travelArea.getPlace() != null) {
+                places.add(travelArea.getPlace());
+
+                // 해당 장소의 인증 정보 조회
+                User user = travelArea.getUser();
+                Place place = travelArea.getPlace();
+
+                verificationRepository.findByUserAndPlace(user, place)
+                        .map(VerificationDto::fromEntity)
+                        .ifPresent(verifications::add);
             }
         }
 
-        // 중복 제거
-        places = places.stream().distinct().collect(Collectors.toList());
-        verifications = verifications.stream().distinct().collect(Collectors.toList());
+        // 장소 DTO 변환
+        List<PlaceDto> placeDtos = places.stream()
+                .map(PlaceDto::fromEntity)
+                .collect(Collectors.toList());
+
+        log.info("장소 및 인증 정보 수집 완료 - 장소 수: {}, 인증 수: {}",
+                placeDtos.size(), verifications.size());
 
         // 상세 DTO 생성 및 반환
-        return TravelRootDetailDto.fromEntity(travelRoot, travelAreas, places, verifications);
+        return TravelRootDetailDto.fromEntity(travelRoot, travelAreas, placeDtos, verifications);
     }
 
     /**

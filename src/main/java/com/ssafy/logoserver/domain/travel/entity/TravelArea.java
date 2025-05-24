@@ -1,6 +1,7 @@
 package com.ssafy.logoserver.domain.travel.entity;
 
 import com.ssafy.logoserver.domain.area.entity.Area;
+import com.ssafy.logoserver.domain.area.entity.Place;
 import com.ssafy.logoserver.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -37,6 +38,13 @@ public class TravelArea {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "travel_day_id", nullable = false)
     private TravelRoot travelDay;
+
+    /**
+     * 방문할 구체적인 장소
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "place_id", nullable = true)
+    private Place place;
 
     @Column(name = "start_time")
     private LocalDateTime startTime;
