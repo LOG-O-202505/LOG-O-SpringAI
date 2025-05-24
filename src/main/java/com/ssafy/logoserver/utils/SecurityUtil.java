@@ -40,6 +40,7 @@ public class SecurityUtil {
 
         // OAuth2 로그인인 경우
         if (authentication instanceof OAuth2AuthenticationToken) {
+            log.info("getCurrentUserId - OAuth2AuthenticationToken");
             OAuth2AuthenticationToken oauth2Token = (OAuth2AuthenticationToken) authentication;
             log.info("getCurrentUserId - oauth2Token: {}", oauth2Token);
             String registrationId = oauth2Token.getAuthorizedClientRegistrationId();
@@ -53,6 +54,7 @@ public class SecurityUtil {
         }
 
         // 일반 로그인인 경우
+        log.info("getCurrentUserId - principle");
         Object principal = authentication.getPrincipal();
         if (principal instanceof UserDetails) {
             return ((UserDetails) principal).getUsername();
