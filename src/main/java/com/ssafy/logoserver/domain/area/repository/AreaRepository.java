@@ -9,4 +9,5 @@ import java.util.Optional;
 public interface AreaRepository extends JpaRepository<Area, Long> {
     List<Area> findSigsByRegion(Long regionCode);
     Optional<Area> findRegionBySig(Long sigCode);
+    Optional<Area> findByRegionAndSig(Long region, Long sig);
 }
