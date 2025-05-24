@@ -19,6 +19,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 여행 지역 컨트롤러
+ * 여행 지역 관련 REST API를 제공하는 컨트롤러
+ */
 @RestController
 @RequestMapping("/api/travel-areas")
 @RequiredArgsConstructor
@@ -28,6 +32,10 @@ public class TravelAreaController {
 
     private final TravelAreaService travelAreaService;
 
+    /**
+     * 모든 여행 지역 조회
+     * @return 모든 여행 지역 리스트
+     */
     @GetMapping
     @Operation(summary = "모든 여행 지역 조회", description = "시스템에 등록된 모든 여행 지역 정보를 조회합니다.")
     @ApiResponses(value = {
@@ -39,6 +47,11 @@ public class TravelAreaController {
         return ResponseUtil.success(travelAreas);
     }
 
+    /**
+     * 여행 지역 상세 조회
+     * @param tauid 여행 지역 ID
+     * @return 여행 지역 상세 정보
+     */
     @GetMapping("/{tauid}")
     @Operation(summary = "여행 지역 상세 조회", description = "ID로 특정 여행 지역의 상세 정보를 조회합니다.")
     @ApiResponses(value = {
@@ -56,6 +69,11 @@ public class TravelAreaController {
         }
     }
 
+    /**
+     * 여행별 지역 조회
+     * @param travelId 여행 ID
+     * @return 해당 여행의 모든 지역 정보
+     */
     @GetMapping("/travel/{travelId}")
     @Operation(summary = "여행별 지역 조회", description = "특정 여행의 모든 지역 정보를 조회합니다.")
     @ApiResponses(value = {
@@ -73,6 +91,11 @@ public class TravelAreaController {
         }
     }
 
+    /**
+     * 여행 루트별 지역 조회
+     * @param travelRootId 여행 루트 ID
+     * @return 해당 여행 루트의 모든 지역 정보
+     */
     @GetMapping("/travel-root/{travelRootId}")
     @Operation(summary = "여행 루트별 지역 조회", description = "특정 여행 루트의 모든 지역 정보를 조회합니다.")
     @ApiResponses(value = {
@@ -90,6 +113,11 @@ public class TravelAreaController {
         }
     }
 
+    /**
+     * 여행 지역 등록
+     * @param travelAreaDto 여행 지역 정보
+     * @return 생성된 여행 지역 정보
+     */
     @PostMapping
     @Operation(summary = "여행 지역 등록", description = "새로운 여행 지역을 등록합니다.")
     @ApiResponses(value = {
@@ -114,6 +142,12 @@ public class TravelAreaController {
         }
     }
 
+    /**
+     * 여행 지역 정보 수정
+     * @param tauid 여행 지역 ID
+     * @param travelAreaDto 수정할 여행 지역 정보
+     * @return 수정된 여행 지역 정보
+     */
     @PutMapping("/{tauid}")
     @Operation(summary = "여행 지역 정보 수정", description = "ID로 특정 여행 지역의 정보를 수정합니다.")
     @ApiResponses(value = {
@@ -138,6 +172,8 @@ public class TravelAreaController {
 
     /**
      * 여행 지역 추가 (장소 확인 및 생성 포함)
+     * @param requestDto 여행 지역 추가 요청 정보
+     * @return 생성된 여행 지역 정보
      */
     @PostMapping("/add")
     @PreAuthorize("isAuthenticated()")
@@ -153,7 +189,8 @@ public class TravelAreaController {
             @Parameter(description = "여행 지역 추가 정보", required = true)
             @RequestBody TravelAreaRequestDto requestDto) {
         try {
-            log.info("여행 지역 추가 요청 - travel_id: {}, address: {}", requestDto.getTravel_id(), requestDto.getAddress());
+            log.info("여행 지역 추가 요청 - travel_id: {}, place_id: {}, address: {}",
+                    requestDto.getTravel_id(), requestDto.getPlace_id(), requestDto.getAddress());
             TravelAreaDto travelArea = travelAreaService.addTravelAreaWithPlace(requestDto);
             return ResponseUtil.success(travelArea);
         } catch (IllegalArgumentException e) {
@@ -170,6 +207,8 @@ public class TravelAreaController {
 
     /**
      * 여행 지역 삭제
+     * @param tauid 여행 지역 ID
+     * @return 삭제 결과
      */
     @DeleteMapping("/{tauid}")
     @PreAuthorize("isAuthenticated()")
