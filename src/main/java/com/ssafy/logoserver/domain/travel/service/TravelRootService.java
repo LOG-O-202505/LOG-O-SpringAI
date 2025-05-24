@@ -25,9 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -162,7 +160,7 @@ public class TravelRootService {
 
     /**
      * 여행 루트 상세 정보 조회 (연관 데이터 모두 포함)
-     * 이제 각 TravelArea에 연결된 Place 정보도 함께 조회
+     * 각 TravelArea에 장소 정보와 인증 정보를 포함하여 반환
      * @param truid 여행 루트 ID
      * @return 여행 루트 상세 DTO
      */
@@ -174,42 +172,39 @@ public class TravelRootService {
         TravelRoot travelRoot = travelRootRepository.findById(truid)
                 .orElseThrow(() -> new IllegalArgumentException("해당 여행 루트가 존재하지 않습니다: " + truid));
 
-        // 여행 지역 목록 조회 (이제 각 TravelArea에 Place 정보가 포함됨)
-        List<TravelAreaDto> travelAreas = travelAreaRepository.findByTravelDay(travelRoot).stream()
-                .map(TravelAreaDto::fromEntity)
-                .collect(Collectors.toList());
+        // 여행 지역 목록 조회 후 각 지역에 대해 장소 정보와 인증 정보를 포함하여 DTO 생성
+        List<TravelArea> travelAreaEntities = travelAreaRepository.findByTravelDay(travelRoot);
+        List<TravelAreaDto> travelAreas = new ArrayList<>();
 
-        log.info("여행 지역 조회 완료 - 지역 수: {}", travelAreas.size());
+        log.info("여행 지역 조회 완료 - 지역 수: {}", travelAreaEntities.size());
 
-        // 연결된 장소들 수집 (중복 제거)
-        List<Place> places = new ArrayList<>();
-        List<VerificationDto> verifications = new ArrayList<>();
+        // 각 여행 지역별로 인증 정보를 조회하여 TravelAreaDto에 포함
+        for (TravelArea travelArea : travelAreaEntities) {
+            List<VerificationDto> verifications = new ArrayList<>();
 
-        for (TravelArea travelArea : travelAreaRepository.findByTravelDay(travelRoot)) {
-            // 장소 정보 수집
-            if (travelArea.getPlace() != null) {
-                places.add(travelArea.getPlace());
-
-                // 해당 장소의 인증 정보 조회
+            // 해당 여행 지역에 장소가 있고, 사용자가 있는 경우 인증 정보 조회
+            if (travelArea.getPlace() != null && travelArea.getUser() != null) {
                 User user = travelArea.getUser();
                 Place place = travelArea.getPlace();
 
+                // 해당 사용자와 장소에 대한 인증 정보 조회
                 verificationRepository.findByUserAndPlace(user, place)
                         .map(VerificationDto::fromEntity)
                         .ifPresent(verifications::add);
+
+                log.debug("사용자 {} - 장소 {} 인증 정보 조회 완료: {}개",
+                        user.getUuid(), place.getPuid(), verifications.size());
             }
+
+            // TravelAreaDto 생성 시 인증 정보도 함께 포함
+            TravelAreaDto travelAreaDto = TravelAreaDto.fromEntityWithVerifications(travelArea, verifications);
+            travelAreas.add(travelAreaDto);
         }
 
-        // 장소 DTO 변환
-        List<PlaceDto> placeDtos = places.stream()
-                .map(PlaceDto::fromEntity)
-                .collect(Collectors.toList());
+        log.info("여행 지역별 장소 및 인증 정보 수집 완료 - 총 지역 수: {}", travelAreas.size());
 
-        log.info("장소 및 인증 정보 수집 완료 - 장소 수: {}, 인증 수: {}",
-                placeDtos.size(), verifications.size());
-
-        // 상세 DTO 생성 및 반환
-        return TravelRootDetailDto.fromEntity(travelRoot, travelAreas, placeDtos, verifications);
+        // 상세 DTO 생성 및 반환 (기존과 달리 별도의 places, verifications 파라미터 없이 생성)
+        return TravelRootDetailDto.fromEntity(travelRoot, travelAreas);
     }
 
     /**

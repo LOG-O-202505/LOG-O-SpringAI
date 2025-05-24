@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -47,7 +48,7 @@ public class TravelAreaService {
      */
     public List<TravelAreaDto> getAllTravelAreas() {
         return travelAreaRepository.findAll().stream()
-                .map(TravelAreaDto::fromEntity)
+                .map(TravelAreaDto::fromEntity) // 기본 fromEntity 메서드 사용 (인증 정보 없이)
                 .collect(Collectors.toList());
     }
 
@@ -59,7 +60,7 @@ public class TravelAreaService {
     public TravelAreaDto getTravelAreaById(Long tauid) {
         TravelArea travelArea = travelAreaRepository.findById(tauid)
                 .orElseThrow(() -> new IllegalArgumentException("해당 여행 지역이 존재하지 않습니다: " + tauid));
-        return TravelAreaDto.fromEntity(travelArea);
+        return TravelAreaDto.fromEntity(travelArea); // 기본 fromEntity 메서드 사용
     }
 
     /**
@@ -72,7 +73,7 @@ public class TravelAreaService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 여행이 존재하지 않습니다: " + travelId));
 
         return travelAreaRepository.findByTravel(travel).stream()
-                .map(TravelAreaDto::fromEntity)
+                .map(TravelAreaDto::fromEntity) // 기본 fromEntity 메서드 사용
                 .collect(Collectors.toList());
     }
 
@@ -86,7 +87,7 @@ public class TravelAreaService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 여행 루트가 존재하지 않습니다: " + travelRootId));
 
         return travelAreaRepository.findByTravelDay(travelRoot).stream()
-                .map(TravelAreaDto::fromEntity)
+                .map(TravelAreaDto::fromEntity) // 기본 fromEntity 메서드 사용
                 .collect(Collectors.toList());
     }
 
@@ -113,11 +114,11 @@ public class TravelAreaService {
         TravelRoot travelRoot = travelRootRepository.findById(travelAreaDto.getTravelDayId())
                 .orElseThrow(() -> new IllegalArgumentException("해당 여행 루트가 존재하지 않습니다: " + travelAreaDto.getTravelDayId()));
 
-        // 장소 확인 (선택사항)
+        // 장소 확인 (선택사항) - 이제 PlaceDto에서 ID 추출
         Place place = null;
-        if (travelAreaDto.getPlaceId() != null) {
-            place = placeRepository.findById(travelAreaDto.getPlaceId())
-                    .orElseThrow(() -> new IllegalArgumentException("해당 장소가 존재하지 않습니다: " + travelAreaDto.getPlaceId()));
+        if (travelAreaDto.getPlace() != null && travelAreaDto.getPlace().getPuid() != null) {
+            place = placeRepository.findById(travelAreaDto.getPlace().getPuid())
+                    .orElseThrow(() -> new IllegalArgumentException("해당 장소가 존재하지 않습니다: " + travelAreaDto.getPlace().getPuid()));
         }
 
         // 권한 확인 (여행 작성자만 지역 추가 가능)
@@ -160,11 +161,11 @@ public class TravelAreaService {
                     .orElseThrow(() -> new IllegalArgumentException("해당 여행 루트가 존재하지 않습니다: " + travelAreaDto.getTravelDayId()));
         }
 
-        // 장소 변경 요청이 있는 경우
-        if (travelAreaDto.getPlaceId() != null) {
-            if (place == null || !travelAreaDto.getPlaceId().equals(place.getPuid())) {
-                place = placeRepository.findById(travelAreaDto.getPlaceId())
-                        .orElseThrow(() -> new IllegalArgumentException("해당 장소가 존재하지 않습니다: " + travelAreaDto.getPlaceId()));
+        // 장소 변경 요청이 있는 경우 - PlaceDto에서 ID 추출
+        if (travelAreaDto.getPlace() != null && travelAreaDto.getPlace().getPuid() != null) {
+            if (place == null || !travelAreaDto.getPlace().getPuid().equals(place.getPuid())) {
+                place = placeRepository.findById(travelAreaDto.getPlace().getPuid())
+                        .orElseThrow(() -> new IllegalArgumentException("해당 장소가 존재하지 않습니다: " + travelAreaDto.getPlace().getPuid()));
             }
         }
 
