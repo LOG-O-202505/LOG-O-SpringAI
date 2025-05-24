@@ -2,15 +2,20 @@ package com.ssafy.logoserver.utils;
 
 import com.ssafy.logoserver.domain.user.entity.User;
 import com.ssafy.logoserver.domain.user.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
 import java.util.Optional;
 
 @Component
+@Slf4j
 public class SecurityUtil {
 
     private static UserRepository userRepository;
@@ -22,17 +27,18 @@ public class SecurityUtil {
 
     /**
      * 현재 로그인한 사용자의 아이디를 반환
+     * OAuth2와 일반 로그인을 모두 지원
      * @return 사용자 아이디
      */
     public static String getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        log.info("getCurrentUserId - authentication: {}", authentication);
 
         if (authentication == null || !authentication.isAuthenticated()) {
             return null;
         }
 
         Object principal = authentication.getPrincipal();
-
         if (principal instanceof UserDetails) {
             return ((UserDetails) principal).getUsername();
         }

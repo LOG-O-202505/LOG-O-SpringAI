@@ -31,7 +31,7 @@ spring:
         show_sql: true
         format_sql: true
     hibernate:
-      ddl-auto: none
+      ddl-auto: create
 #      naming:
         # 물리적 이름 전략 변경 - 대소문자 구분 없이 그대로 사용
 #        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
