@@ -6,8 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
 import java.util.Optional;
 
 @Component
@@ -22,6 +25,7 @@ public class SecurityUtil {
 
     /**
      * 현재 로그인한 사용자의 아이디를 반환
+     * OAuth2와 일반 로그인을 모두 지원
      * @return 사용자 아이디
      */
     public static String getCurrentUserId() {
@@ -31,13 +35,60 @@ public class SecurityUtil {
             return null;
         }
 
-        Object principal = authentication.getPrincipal();
+        // OAuth2 로그인인 경우
+        if (authentication instanceof OAuth2AuthenticationToken) {
+            OAuth2AuthenticationToken oauth2Token = (OAuth2AuthenticationToken) authentication;
+            String registrationId = oauth2Token.getAuthorizedClientRegistrationId();
+            OAuth2User oauth2User = oauth2Token.getPrincipal();
+            Map<String, Object> attributes = oauth2User.getAttributes();
 
+            return extractUserIdFromOAuth2Attributes(registrationId, attributes);
+        }
+
+        // 일반 로그인인 경우
+        Object principal = authentication.getPrincipal();
         if (principal instanceof UserDetails) {
             return ((UserDetails) principal).getUsername();
         }
 
         return String.valueOf(principal);
+    }
+
+    /**
+     * OAuth2 제공자별 사용자 ID 추출
+     * @param registrationId OAuth2 제공자 ID (google, naver, kakao)
+     * @param attributes OAuth2 사용자 속성
+     * @return 추출된 사용자 ID
+     */
+    private static String extractUserIdFromOAuth2Attributes(String registrationId, Map<String, Object> attributes) {
+        switch (registrationId.toLowerCase()) {
+            case "google":
+                // Google의 경우 'sub' 필드가 사용자 ID
+                return (String) attributes.get("sub");
+
+            case "naver":
+                // Naver의 경우 'response' 안의 'id' 필드가 사용자 ID
+                Map<String, Object> response = (Map<String, Object>) attributes.get("response");
+                if (response != null) {
+                    return (String) response.get("id");
+                }
+                break;
+
+            case "kakao":
+                // Kakao의 경우 'id' 필드가 사용자 ID
+                Object kakaoId = attributes.get("id");
+                if (kakaoId != null) {
+                    return kakaoId.toString();
+                }
+                break;
+
+            default:
+                // 알 수 없는 제공자의 경우 attributes를 문자열로 반환 (기존 동작)
+                return String.valueOf(attributes);
+        }
+
+        // 추출 실패시 null 반환
+        return null;
     }
 
     /**
