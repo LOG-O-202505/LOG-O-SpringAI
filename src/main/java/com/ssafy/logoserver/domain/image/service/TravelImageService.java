@@ -45,7 +45,11 @@ public class TravelImageService {
         Travel travel = travelRepository.findById(travelId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 여행이 존재하지 않습니다: " + travelId));
 
-        List<TravelImage> travelImages = travelImageRepository.findByTravel(travel);
+        // ✅ travel이 null이 아닌 이미지들만 조회
+        List<TravelImage> travelImages = travelImageRepository.findByTravel(travel)
+                .stream()
+                .filter(image -> image.getTravel() != null)  // travel이 null이 아닌 것만 필터링
+                .toList();
 
         if (travelImages.isEmpty()) {
             log.info("여행에 등록된 이미지가 없습니다 - travelId: {}", travelId);
@@ -216,16 +220,21 @@ public class TravelImageService {
 
         // 여행 변경이 필요한 경우
         Travel travel = travelImage.getTravel();
-        if (travelImageDto.getTravelId() != null && !travelImageDto.getTravelId().equals(travel.getTuid())) {
+        if (travelImageDto.getTravelId() != null) {
+            // ✅ travelId가 있는 경우에만 여행 조회
             travel = travelRepository.findById(travelImageDto.getTravelId())
                     .orElseThrow(() -> new IllegalArgumentException("해당 여행이 존재하지 않습니다: " + travelImageDto.getTravelId()));
+        } else {
+            // ✅ travelId가 null인 경우 travel을 null로 설정
+            travel = null;
         }
 
         // 새로운 여행 이미지 정보 생성 (불변성 유지)
         TravelImage updatedTravelImage = TravelImage.builder()
                 .tiuid(travelImage.getTiuid())
                 .user(travelImage.getUser())
-                .travel(travel)
+                .travel(travel)  // ✅ null일 수 있음
+                .verification(travelImage.getVerification())
                 .name(travelImageDto.getName() != null ? travelImageDto.getName() : travelImage.getName())
                 .url(travelImageDto.getUrl() != null ? travelImageDto.getUrl() : travelImage.getUrl())
                 .build();
@@ -339,7 +348,9 @@ public class TravelImageService {
                 Map<String, Object> imageInfo = new HashMap<>();
                 imageInfo.put("tiuid", travelImage.getTiuid());
                 imageInfo.put("name", travelImage.getName());
-                imageInfo.put("travelId", travelImage.getTravel().getTuid());
+                // ✅ travel이 null일 수 있으므로 null 체크 추가
+                imageInfo.put("travelId", travelImage.getTravel() != null ?
+                        travelImage.getTravel().getTuid() : null);
                 imageInfo.put("imageUrl", presignedUrl);
                 imageInfo.put("expiryMinutes", expiryMinutes);
 

@@ -3,6 +3,7 @@ package com.ssafy.logoserver.domain.travel.service;
 import com.ssafy.logoserver.domain.area.entity.Area;
 import com.ssafy.logoserver.domain.area.repository.AreaRepository;
 import com.ssafy.logoserver.domain.image.dto.TravelImageDto;
+import com.ssafy.logoserver.domain.image.entity.TravelImage;
 import com.ssafy.logoserver.domain.image.repository.TravelImageRepository;
 import com.ssafy.logoserver.domain.image.service.TravelImageService;
 import com.ssafy.logoserver.domain.travel.dto.*;
@@ -321,7 +322,7 @@ public class TravelService {
     }
 
     /**
-     * 여행 삭제
+     * 여행 삭제 (TravelImage 보존)
      */
     @Transactional
     public void deleteTravel(Long tuid, String userId) {
@@ -335,10 +336,27 @@ public class TravelService {
 
         log.info("여행 삭제 - ID: {}, 제목: {}", travel.getTuid(), travel.getTitle());
 
-        // Travel 삭제 시 연관된 TravelRoot들도 CASCADE로 함께 삭제됨
+        // ✅ Travel 삭제 전에 연관된 TravelImage들의 travel 참조를 null로 설정
+        List<TravelImage> travelImages = travelImageRepository.findByTravel(travel);
+        for (TravelImage travelImage : travelImages) {
+            TravelImage updatedImage = TravelImage.builder()
+                    .tiuid(travelImage.getTiuid())
+                    .user(travelImage.getUser())
+                    .travel(null)  // ✅ travel 참조를 null로 설정
+                    .verification(travelImage.getVerification())
+                    .name(travelImage.getName())
+                    .url(travelImage.getUrl())
+                    .build();
+
+            travelImageRepository.save(updatedImage);
+        }
+
+        log.info("연관된 여행 이미지 {}개의 travel 참조를 null로 설정", travelImages.size());
+
+        // Travel 삭제 (TravelRoot들은 CASCADE로 함께 삭제됨)
         travelRepository.delete(travel);
 
-        log.info("여행 삭제 완료 - ID: {}", tuid);
+        log.info("여행 삭제 완료 - ID: {}, TravelImage는 보존됨", tuid);
     }
 
     /**
