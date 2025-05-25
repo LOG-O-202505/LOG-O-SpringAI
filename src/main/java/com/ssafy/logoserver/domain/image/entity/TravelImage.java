@@ -29,7 +29,7 @@ public class TravelImage {
     @JoinColumn(name = "travel_id", nullable = false)
     private Travel travel;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "verification_id", nullable = false)
     private Verification verification;
 
