@@ -25,10 +25,7 @@ public class Verification {
     private Long vuid;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumns({
-            @JoinColumn(name = "place_id", referencedColumnName = "puid"),
-            @JoinColumn(name = "place_address", referencedColumnName = "address")
-    })
+    @JoinColumn(name = "place_id", nullable = true)
     private Place place;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -39,6 +36,6 @@ public class Verification {
 
     private String review;
 
-    @OneToMany(mappedBy = "verification", cascade = CascadeType.ALL)
-    private List<TravelImage> travelImages = new ArrayList<>();
+    @OneToOne(mappedBy = "verification", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private TravelImage travelImages;
 }
