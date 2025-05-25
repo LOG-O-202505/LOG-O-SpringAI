@@ -13,13 +13,15 @@ import com.ssafy.logoserver.domain.travel.repository.TravelAreaRepository;
 import com.ssafy.logoserver.domain.travel.repository.VerificationRepository;
 import com.ssafy.logoserver.domain.user.entity.User;
 import com.ssafy.logoserver.domain.user.repository.UserRepository;
-import com.ssafy.logoserver.service.MinioService;
 import com.ssafy.logoserver.utils.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,7 +36,6 @@ public class VerificationService {
     private final PlaceRepository placeRepository;
     private final TravelAreaRepository travelAreaRepository;
     private final TravelImageRepository travelImageRepository;
-    private final MinioService minioService; // MinIO 서비스 추가
 
     /**
      * 모든 인증 정보 조회
@@ -95,7 +96,7 @@ public class VerificationService {
     }
 
     /**
-     * 방문 인증 추가 (MinIO 사용)
+     * 방문 인증 추가
      * @param requestDto 방문 인증 요청 DTO
      * @return 생성된 인증 정보 DTO
      */
@@ -123,27 +124,48 @@ public class VerificationService {
         Verification savedVerification = verificationRepository.save(verification);
         log.info("방문 인증 정보 저장 완료 - vuid: {}", savedVerification.getVuid());
 
-        // 이미지 처리 (MinIO 사용)
+        // 이미지 처리 (필요시)
         if (requestDto.getImage() != null && !requestDto.getImage().isEmpty()) {
-            String imageUrl = saveImageToMinio(requestDto.getImage(), savedVerification);
-            log.info("인증 이미지 MinIO 저장 완료 - URL: {}", imageUrl);
+            // 이미지 저장 로직
+            saveImageFromBase64(requestDto.getImage(), savedVerification);
         }
 
         return VerificationDto.fromEntity(savedVerification);
     }
 
     /**
-     * Base64 인코딩된 이미지를 MinIO에 저장
+     * Base64 인코딩된 이미지를 저장
      * @param base64Image Base64 인코딩된 이미지 데이터
      * @param verification 방문 인증 엔티티
-     * @return 저장된 이미지 URL
      */
-    private String saveImageToMinio(String base64Image, Verification verification) {
+    private void saveImageFromBase64(String base64Image, Verification verification) {
         try {
-            log.info("인증 이미지 MinIO 저장 시작 - vuid: {}", verification.getVuid());
+            log.info("인증 이미지 저장 시작 - vuid: {}", verification.getVuid());
 
-            // MinIO에 Base64 이미지 업로드
-            String imageUrl = minioService.uploadBase64Image(base64Image, "verification-images");
+            // Base64 디코딩
+            String imageData = base64Image;
+            if (base64Image.contains(",")) {
+                imageData = base64Image.split(",")[1];
+            }
+
+            byte[] decodedBytes = Base64.getDecoder().decode(imageData);
+
+            // 이미지 파일 저장 경로
+            String fileName = "verification_" + verification.getVuid() + ".jpg";
+            String filePath = "uploads/verifications/" + fileName;
+
+            // 디렉토리 생성
+            File directory = new File("uploads/verifications");
+            if (!directory.exists()) {
+                directory.mkdirs();
+            }
+
+            // 파일 저장
+            try (FileOutputStream outputStream = new FileOutputStream(filePath)) {
+                outputStream.write(decodedBytes);
+            }
+
+            log.info("인증 이미지 파일 저장 완료 - 경로: {}", filePath);
 
             Place place = verification.getPlace();
             User user = verification.getUser();
@@ -157,16 +179,14 @@ public class VerificationService {
                     .verification(verification)
                     .travel(travel)
                     .name("방문 인증 이미지")
-                    .url(imageUrl) // MinIO URL 저장
+                    .url(filePath)
                     .build();
 
             travelImageRepository.save(travelImage);
-            log.info("여행 이미지 저장 완료 - tiuid: {}, URL: {}", travelImage.getTiuid(), imageUrl);
-
-            return imageUrl;
+            log.info("여행 이미지 저장 완료 - tiuid: {}", travelImage.getTiuid());
 
         } catch (Exception e) {
-            log.error("MinIO 이미지 저장 중 오류 발생", e);
+            log.error("이미지 저장 중 오류 발생", e);
             throw new RuntimeException("이미지 저장 중 오류 발생: " + e.getMessage(), e);
         }
     }
