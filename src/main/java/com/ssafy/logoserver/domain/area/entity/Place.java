@@ -62,7 +62,7 @@ public class Place {
      * 이 장소를 좋아요한 사용자 관계 목록
      * UserLike 생성/삭제 시 양방향 관계 유지를 위해 사용
      */
-    @OneToMany(mappedBy = "place", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "place", cascade = CascadeType.ALL)
     @Builder.Default
     private List<UserLike> userLikes = new ArrayList<>();
 
