@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 public class TravelImageDto {
     private Long tiuid;
     private Long userId;
-    private Long travelId;
+    private Long travelId;  // ✅ Travel이 삭제된 경우 null일 수 있음
     private String name;
     private String url;
 
@@ -23,7 +23,8 @@ public class TravelImageDto {
         return TravelImageDto.builder()
                 .tiuid(travelImage.getTiuid())
                 .userId(travelImage.getUser().getUuid())
-                .travelId(travelImage.getTravel().getTuid())
+                // ✅ Travel이 null일 수 있으므로 null 체크 추가
+                .travelId(travelImage.getTravel() != null ? travelImage.getTravel().getTuid() : null)
                 .name(travelImage.getName())
                 .url(travelImage.getUrl())
                 .build();
@@ -32,7 +33,7 @@ public class TravelImageDto {
     public TravelImage toEntity(User user, Travel travel) {
         return TravelImage.builder()
                 .user(user)
-                .travel(travel)
+                .travel(travel)  // ✅ travel이 null일 수 있음
                 .name(name)
                 .url(url)
                 .build();
