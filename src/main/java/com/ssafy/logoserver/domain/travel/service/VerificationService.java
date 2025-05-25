@@ -119,15 +119,18 @@ public class VerificationService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 장소가 존재하지 않습니다."));
 
         // 인증 정보 생성
+        // created 필드는 @CreationTimestamp 어노테이션에 의해 자동으로 현재 시간이 설정됨
         Verification verification = Verification.builder()
                 .user(user)
                 .place(place)
                 .star(requestDto.getStar())
                 .review(requestDto.getReview())
+                // created 필드는 자동 생성되므로 별도로 설정하지 않음
                 .build();
 
         Verification savedVerification = verificationRepository.save(verification);
-        log.info("방문 인증 정보 저장 완료 - vuid: {}", savedVerification.getVuid());
+        log.info("방문 인증 정보 저장 완료 - vuid: {}, 생성시간: {}",
+                savedVerification.getVuid(), savedVerification.getCreated());
 
         // 이미지 파일이 있는 경우 MinIO에 업로드 및 TravelImage 생성
         if (imageFile != null && !imageFile.isEmpty()) {
