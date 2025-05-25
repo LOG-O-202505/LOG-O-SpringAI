@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,99 @@ public class TravelImageService {
     private final UserRepository userRepository;
     private final TravelRepository travelRepository;
     private final MinIOService minIOService;
+
+    /**
+     * 특정 여행의 가장 최근 이미지 URL 조회
+     * 사용자 프로필 페이지에서 여행 썸네일로 사용하기 위한 메서드
+     * @param travelId 여행 ID
+     * @param expiryMinutes URL 만료 시간 (분)
+     * @return 가장 최근 이미지의 Presigned URL, 이미지가 없으면 null
+     */
+    public String getLatestTravelImageUrl(Long travelId, int expiryMinutes) {
+        log.info("여행의 최근 이미지 URL 조회 시작 - travelId: {}, 만료시간: {}분", travelId, expiryMinutes);
+
+        // 해당 여행의 모든 이미지 조회
+        Travel travel = travelRepository.findById(travelId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 여행이 존재하지 않습니다: " + travelId));
+
+        List<TravelImage> travelImages = travelImageRepository.findByTravel(travel);
+
+        if (travelImages.isEmpty()) {
+            log.info("여행에 등록된 이미지가 없습니다 - travelId: {}", travelId);
+            return null;
+        }
+
+        try {
+            // TravelImage 엔티티의 tiuid를 기준으로 가장 최근 이미지 찾기
+            // tiuid가 AUTO_INCREMENT라서 높은 값일수록 최근에 등록된 이미지
+            TravelImage latestImage = travelImages.stream()
+                    .max(Comparator.comparing(TravelImage::getTiuid))
+                    .orElse(null);
+
+            if (latestImage == null) {
+                log.warn("가장 최근 이미지를 찾을 수 없습니다 - travelId: {}", travelId);
+                return null;
+            }
+
+            // MinIO 객체 키로 Presigned URL 생성
+            String objectKey = latestImage.getUrl();
+            String presignedUrl = minIOService.generatePresignedUrl(objectKey, expiryMinutes);
+
+            log.info("여행 최근 이미지 URL 생성 완료 - travelId: {}, tiuid: {}, objectKey: {}",
+                    travelId, latestImage.getTiuid(), objectKey);
+
+            return presignedUrl;
+
+        } catch (Exception e) {
+            log.error("여행 최근 이미지 URL 생성 실패 - travelId: {}", travelId, e);
+            // 개별 이미지 URL 생성 실패 시 null 반환
+            return null;
+        }
+    }
+
+    /**
+     * 여러 여행의 최근 이미지 URL을 일괄 조회
+     * 사용자 프로필 페이지에서 효율적인 조회를 위한 메서드
+     * @param travelIds 여행 ID 목록
+     * @param expiryMinutes URL 만료 시간 (분)
+     * @return 여행 ID를 키로 하고, 최근 이미지 URL을 값으로 하는 Map
+     */
+    public Map<Long, String> getLatestTravelImageUrls(List<Long> travelIds, int expiryMinutes) {
+        log.info("여러 여행의 최근 이미지 URL 일괄 조회 시작 - 여행 수: {}, 만료시간: {}분",
+                travelIds.size(), expiryMinutes);
+
+        Map<Long, String> result = new HashMap<>();
+
+        for (Long travelId : travelIds) {
+            try {
+                String latestImageUrl = getLatestTravelImageUrl(travelId, expiryMinutes);
+                result.put(travelId, latestImageUrl); // null 값도 저장 (이미지 없음을 표시)
+
+                log.debug("여행 {} 최근 이미지 URL: {}", travelId,
+                        latestImageUrl != null ? "생성됨" : "없음");
+
+            } catch (Exception e) {
+                log.error("여행 {} 최근 이미지 URL 조회 실패", travelId, e);
+                result.put(travelId, null); // 오류 발생 시 null 저장
+            }
+        }
+
+        log.info("여러 여행의 최근 이미지 URL 일괄 조회 완료 - 성공: {}개, 전체: {}개",
+                result.size(), travelIds.size());
+
+        return result;
+    }
+
+    /**
+     * 기본 만료 시간(30분)으로 최근 여행 이미지 URL 조회
+     * @param travelId 여행 ID
+     * @return 가장 최근 이미지의 Presigned URL
+     */
+    public String getLatestTravelImageUrl(Long travelId) {
+        return getLatestTravelImageUrl(travelId, 30); // 기본 30분 만료
+    }
+
+    // 기존 메서드들은 그대로 유지...
 
     /**
      * 모든 여행 이미지 조회
@@ -154,7 +248,6 @@ public class TravelImageService {
 
         travelImageRepository.delete(travelImage);
     }
-
 
     /**
      * 여행 이미지 조회 URL 생성

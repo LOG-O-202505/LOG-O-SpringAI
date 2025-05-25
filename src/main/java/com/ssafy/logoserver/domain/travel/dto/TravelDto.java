@@ -53,6 +53,17 @@ public class TravelDto {
     @Schema(description = "여행 경로 목록")
     private List<TravelRootDto> travelRoots;
 
+    /**
+     * 가장 최근 여행 이미지 URL (MinIO Presigned URL)
+     * 사용자 프로필 페이지에서 여행 썸네일로 사용
+     * 이미지가 없는 경우 null 값
+     */
+    @Schema(description = "가장 최근 여행 이미지 URL", example = "https://minio.example.com/bucket/image.jpg")
+    private String latestImageUrl;
+
+    /**
+     * 기본 엔티티 변환 메서드 (기존 로직 유지)
+     */
     public static TravelDto fromEntity(Travel travel) {
         return TravelDto.builder()
                 .tuid(travel.getTuid())
@@ -65,6 +76,30 @@ public class TravelDto {
                 .memo(travel.getMemo())
                 .totalBudget(travel.getTotalBudget())
                 .created(travel.getCreated())
+                .latestImageUrl(null) // 기본값으로 null 설정
+                .build();
+    }
+
+    /**
+     * 최근 이미지 URL을 포함한 엔티티 변환 메서드
+     * 사용자 프로필 조회 시 사용
+     * @param travel 여행 엔티티
+     * @param latestImageUrl 가장 최근 이미지의 MinIO Presigned URL
+     * @return 최근 이미지 URL이 포함된 TravelDto
+     */
+    public static TravelDto fromEntityWithLatestImage(Travel travel, String latestImageUrl) {
+        return TravelDto.builder()
+                .tuid(travel.getTuid())
+                .userId(travel.getUser().getUuid())
+                .location(travel.getLocation())
+                .title(travel.getTitle())
+                .startDate(travel.getStartDate())
+                .endDate(travel.getEndDate())
+                .peoples(travel.getPeoples())
+                .memo(travel.getMemo())
+                .totalBudget(travel.getTotalBudget())
+                .created(travel.getCreated())
+                .latestImageUrl(latestImageUrl) // 최근 이미지 URL 설정
                 .build();
     }
 
@@ -85,6 +120,7 @@ public class TravelDto {
                 .totalBudget(travel.getTotalBudget())
                 .created(travel.getCreated())
                 .travelRoots(rootDtos)
+                .latestImageUrl(null) // 기본값으로 null 설정
                 .build();
     }
 
