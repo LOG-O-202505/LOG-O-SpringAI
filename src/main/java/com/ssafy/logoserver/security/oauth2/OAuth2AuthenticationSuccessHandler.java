@@ -1,6 +1,7 @@
 // src/main/java/com/ssafy/logoserver/security/oauth2/OAuth2AuthenticationSuccessHandler.java
 package com.ssafy.logoserver.security.oauth2;
 
+import com.ssafy.logoserver.domain.user.service.OAuth2UserService;
 import com.ssafy.logoserver.security.jwt.JwtCookieProvider;
 import com.ssafy.logoserver.security.jwt.TokenRotationService;
 import com.ssafy.logoserver.utils.CookieUtils;
@@ -32,8 +33,9 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private final TokenRotationService tokenRotationService;
     private final HttpCookieOAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository;
     private final JwtCookieProvider jwtCookieProvider;
+    private final OAuth2UserService oAuth2UserService; // OAuth2UserService 의존성 추가
 
-    // Authorized redirect URIs
+    // 허용된 리다이렉트 URI 목록
     private final List<String> authorizedRedirectUris = Arrays.asList(
             "http://localhost:3000/oauth2/redirect",
             "http://localhost:8080/oauth2/redirect",
@@ -51,10 +53,10 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         clearAuthenticationAttributes(request, response);
 
-        // Issue JWT tokens first
+        // JWT 토큰 발급
         tokenRotationService.issueTokens(response, authentication);
 
-        // Handle additional info cookie for OAuth2 users
+        // 추가 정보 쿠키 처리 (수정된 로직)
         handleAdditionalInfoCookie(request, response, authentication);
 
         log.info("OAuth2 authentication successful, redirecting to: {}", targetUrl);
@@ -70,11 +72,11 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             throw new IllegalArgumentException("Unauthorized redirect URI");
         }
 
-        // Check if user needs onboarding
-        boolean needsOnboarding = checkIfUserNeedsOnboarding(authentication);
+        // 실제 데이터베이스 상태를 기반으로 온보딩 필요 여부 확인
+        boolean needsOnboarding = checkIfUserNeedsOnboardingFromDatabase(authentication);
         String baseUrl = redirectUri.orElse(getDefaultTargetUrl());
 
-        // Add onboarding parameter only if needed
+        // 온보딩이 필요한 경우에만 파라미터 추가
         if (needsOnboarding) {
             String separator = baseUrl.contains("?") ? "&" : "?";
             return baseUrl + separator + "onboarding=true";
@@ -83,67 +85,120 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         return baseUrl;
     }
 
-    private boolean checkIfUserNeedsOnboarding(Authentication authentication) {
-        if (authentication instanceof OAuth2AuthenticationToken) {
-            OAuth2User oAuth2User = ((OAuth2AuthenticationToken) authentication).getPrincipal();
-            Map<String, Object> attributes = oAuth2User.getAttributes();
-
-            // Check if this is a new user that needs additional info
-            Boolean isNewUser = (Boolean) attributes.get("isNewUser");
-
-            log.info("OAuth2 user onboarding check - isNewUser: {}", isNewUser);
-            return Boolean.TRUE.equals(isNewUser);
+    /**
+     * 데이터베이스 상태를 기반으로 사용자가 온보딩이 필요한지 확인
+     * OAuth2 속성이 아닌 실제 데이터베이스의 사용자 정보를 확인
+     * @param authentication 인증 객체
+     * @return 온보딩 필요 여부
+     */
+    private boolean checkIfUserNeedsOnboardingFromDatabase(Authentication authentication) {
+        if (!(authentication instanceof OAuth2AuthenticationToken)) {
+            return false;
         }
-        return false;
+
+        try {
+            // 인증된 사용자 이름(ID)을 가져옴
+            String userId = authentication.getName();
+            log.info("데이터베이스 기반 온보딩 필요 여부 확인 - 사용자 ID: {}", userId);
+
+            // OAuth2UserService를 통해 실제 데이터베이스에서 추가 정보 필요 여부 확인
+            boolean needsInfo = oAuth2UserService.needsAdditionalInfo(userId);
+
+            log.info("데이터베이스 확인 결과 - 사용자 ID: {}, 추가 정보 필요: {}", userId, needsInfo);
+            return needsInfo;
+
+        } catch (Exception e) {
+            log.error("온보딩 필요 여부 확인 중 오류 발생: {}", e.getMessage(), e);
+            // 오류 발생 시 안전하게 false 반환 (온보딩 불필요로 처리)
+            return false;
+        }
     }
 
+    /**
+     * 추가 정보 쿠키 처리 로직 (수정됨)
+     * 실제 데이터베이스 상태를 기반으로 쿠키 발급 여부 결정
+     * @param request HTTP 요청
+     * @param response HTTP 응답
+     * @param authentication 인증 객체
+     */
     private void handleAdditionalInfoCookie(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
-        if (authentication instanceof OAuth2AuthenticationToken) {
-            OAuth2User oAuth2User = ((OAuth2AuthenticationToken) authentication).getPrincipal();
-            Map<String, Object> attributes = oAuth2User.getAttributes();
+        if (!(authentication instanceof OAuth2AuthenticationToken)) {
+            return;
+        }
 
-            Boolean isNewUser = (Boolean) attributes.get("isNewUser");
-            Long userId = (Long) attributes.get("userId");
+        OAuth2User oAuth2User = ((OAuth2AuthenticationToken) authentication).getPrincipal();
+        Map<String, Object> attributes = oAuth2User.getAttributes();
 
-            log.info("Setting onboarding cookies - isNewUser: {}, userId: {}", isNewUser, userId);
+        // 사용자 ID 추출
+        Long userId = (Long) attributes.get("userId");
+        String userIdString = authentication.getName();
 
-            // Always set user_id cookie for OAuth2 users
-            if (userId != null) {
-                addOnboardingCookie(response, "user_id", userId.toString(), 24 * 60 * 60); // 24 hours
-            }
+        log.info("추가 정보 쿠키 처리 시작 - 사용자 ID: {}, UUID: {}", userIdString, userId);
 
-            // Only set is_new_user cookie if user actually needs onboarding
-            if (Boolean.TRUE.equals(isNewUser)) {
-                addOnboardingCookie(response, "is_new_user", "true", 2 * 60); // 2 minutes
-                log.info("Added is_new_user cookie for user requiring onboarding");
+        // 사용자 ID 쿠키는 OAuth2 사용자에게 항상 설정 (온보딩 페이지에서 필요)
+        if (userId != null) {
+            addOnboardingCookie(response, "user_id", userId.toString(), 24 * 60 * 60); // 24시간
+            log.info("사용자 ID 쿠키 설정 완료 - userId: {}", userId);
+        }
+
+        // 실제 데이터베이스에서 추가 정보 필요 여부 확인
+        try {
+            boolean needsAdditionalInfo = oAuth2UserService.needsAdditionalInfo(userIdString);
+
+            if (needsAdditionalInfo) {
+                // 추가 정보가 필요한 경우에만 is_new_user 쿠키 설정
+                addOnboardingCookie(response, "is_new_user", "true", 2 * 60); // 2분
+                log.info("신규 사용자 쿠키 설정 완료 - 추가 정보 입력 필요");
             } else {
-                // Ensure the cookie is cleared if user doesn't need onboarding
+                // 추가 정보가 필요 없는 경우 is_new_user 쿠키 삭제
                 clearOnboardingCookie(response, "is_new_user");
-                log.info("Cleared is_new_user cookie for user not requiring onboarding");
+                log.info("기존 사용자 확인 - 추가 정보 불필요, is_new_user 쿠키 삭제");
             }
+
+        } catch (Exception e) {
+            log.error("추가 정보 필요 여부 확인 중 오류 발생: {}", e.getMessage(), e);
+            // 오류 발생 시 안전하게 쿠키 삭제 처리
+            clearOnboardingCookie(response, "is_new_user");
         }
     }
 
+    /**
+     * 온보딩 관련 쿠키 추가
+     * @param response HTTP 응답
+     * @param name 쿠키 이름
+     * @param value 쿠키 값
+     * @param maxAge 만료 시간 (초)
+     */
     private void addOnboardingCookie(HttpServletResponse response, String name, String value, int maxAge) {
         Cookie cookie = new Cookie(name, value);
-        cookie.setHttpOnly(false); // Allow JavaScript access for onboarding logic
-        cookie.setSecure(false); // Set to true in production with HTTPS
+        cookie.setHttpOnly(false); // JavaScript 접근 허용 (온보딩 로직에서 필요)
+        cookie.setSecure(false); // Production에서는 true로 설정 (HTTPS)
         cookie.setPath("/");
         cookie.setMaxAge(maxAge);
         response.addCookie(cookie);
-        log.debug("Added onboarding cookie: {} = {}", name, value);
+        log.debug("온보딩 쿠키 추가 완료: {} = {}, 만료시간: {}초", name, value, maxAge);
     }
 
+    /**
+     * 온보딩 관련 쿠키 삭제
+     * @param response HTTP 응답
+     * @param name 쿠키 이름
+     */
     private void clearOnboardingCookie(HttpServletResponse response, String name) {
         Cookie cookie = new Cookie(name, null);
         cookie.setHttpOnly(false);
         cookie.setSecure(false);
         cookie.setPath("/");
-        cookie.setMaxAge(0); // Expire immediately
+        cookie.setMaxAge(0); // 즉시 만료
         response.addCookie(cookie);
-        log.debug("Cleared onboarding cookie: {}", name);
+        log.debug("온보딩 쿠키 삭제 완료: {}", name);
     }
 
+    /**
+     * 리다이렉트 URI 권한 확인
+     * @param uri 확인할 URI
+     * @return 권한 있는 URI 여부
+     */
     private boolean isAuthorizedRedirectUri(String uri) {
         try {
             java.net.URI clientRedirectUri = java.net.URI.create(uri);
@@ -154,16 +209,21 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                             return authorizedURI.getHost().equalsIgnoreCase(clientRedirectUri.getHost())
                                     && authorizedURI.getPort() == clientRedirectUri.getPort();
                         } catch (Exception e) {
-                            log.warn("Error parsing authorized redirect URI: {}", authorizedRedirectUri, e);
+                            log.warn("허용된 리다이렉트 URI 파싱 오류: {}", authorizedRedirectUri, e);
                             return false;
                         }
                     });
         } catch (Exception e) {
-            log.warn("Error parsing redirect URI: {}", uri, e);
+            log.warn("리다이렉트 URI 파싱 오류: {}", uri, e);
             return false;
         }
     }
 
+    /**
+     * 인증 관련 속성 정리
+     * @param request HTTP 요청
+     * @param response HTTP 응답
+     */
     protected void clearAuthenticationAttributes(HttpServletRequest request, HttpServletResponse response) {
         super.clearAuthenticationAttributes(request);
         httpCookieOAuth2AuthorizationRequestRepository.removeAuthorizationRequestCookies(request, response);
