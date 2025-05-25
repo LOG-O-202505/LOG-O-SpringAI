@@ -15,6 +15,8 @@ import java.time.LocalDate;
  * OAuth2 사용자 추가 정보 완성 DTO
  * OAuth2 로그인 후 필수 정보 입력을 위한 데이터 전송 객체
  * 사용자 ID는 보안 컨텍스트에서 자동으로 추출하므로 포함하지 않음
+ *
+ * 필수 입력 필드: nickname, gender, birthday (3개 필드 모두 필수)
  */
 @Getter
 @NoArgsConstructor
@@ -22,6 +24,15 @@ import java.time.LocalDate;
 @Builder
 @Schema(description = "OAuth2 사용자 추가 정보 완성 DTO")
 public class OAuth2UserCompletionDto {
+
+    /**
+     * 닉네임 (필수)
+     * OAuth2 로그인 시 사용자가 직접 설정하는 닉네임
+     * 2-15자 제한, 중복 불가
+     */
+    @NotBlank(message = "닉네임은 필수입니다.")
+    @Schema(description = "닉네임", example = "멋진여행자", required = true)
+    private String nickname;
 
     /**
      * 사용자 성별 (필수)
@@ -39,19 +50,4 @@ public class OAuth2UserCompletionDto {
     @NotNull(message = "생년월일은 필수입니다.")
     @Schema(description = "생년월일", example = "1990-01-01", required = true)
     private LocalDate birthday;
-
-    /**
-     * 노션 페이지 ID (선택사항)
-     * 사용자의 노션 페이지 연동을 위한 ID
-     */
-    @Schema(description = "노션 페이지 ID", example = "12345abc-6789-def0-1234-56789abcdef0")
-    private String notionPageId;
-
-    /**
-     * 닉네임 변경 (선택사항)
-     * 입력하지 않으면 기존 닉네임 유지
-     */
-    @NotNull(message = "닉네임은 필수입니다.")
-    @Schema(description = "닉네임 ", example = "새로운닉네임")
-    private String nickname;
 }

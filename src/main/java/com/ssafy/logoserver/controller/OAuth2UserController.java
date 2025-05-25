@@ -25,24 +25,34 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * OAuth2 관련 API 컨트롤러
+ * OAuth2 인증 및 사용자 정보 완성 관련 엔드포인트를 제공
+ */
 @RestController
 @RequestMapping("/api/oauth2")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "OAuth2 API", description = "OAuth2 인증 관련 API")
+@Tag(name = "OAuth2 API", description = "OAuth2 authentication related API")
 public class OAuth2UserController {
 
     private final OAuth2UserService oAuth2UserService;
 
+    /**
+     * OAuth2 사용자 정보 조회
+     * 현재 인증된 OAuth2 사용자 정보를 반환
+     * @param oAuth2User OAuth2 인증된 사용자 정보
+     * @return 사용자 정보 DTO
+     */
     @GetMapping("/user")
-    @Operation(summary = "OAuth2 사용자 정보 조회", description = "현재 인증된 OAuth2 사용자의 정보를 조회합니다.")
+    @Operation(summary = "Get OAuth2 User Info", description = "Retrieve current OAuth2 authenticated user information.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "조회 성공"),
-            @ApiResponse(responseCode = "401", description = "인증 필요")
+            @ApiResponse(responseCode = "200", description = "Success"),
+            @ApiResponse(responseCode = "401", description = "Authentication required")
     })
     public ResponseEntity<Map<String, Object>> getOAuth2UserInfo(@AuthenticationPrincipal OAuth2User oAuth2User) {
         if (oAuth2User == null) {
-            return ResponseUtil.error(org.springframework.http.HttpStatus.UNAUTHORIZED, "OAuth2 인증이 필요합니다.");
+            return ResponseUtil.error(org.springframework.http.HttpStatus.UNAUTHORIZED, "OAuth2 authentication required.");
         }
 
         UserDto userDto = oAuth2UserService.getOAuth2User(oAuth2User);
@@ -50,118 +60,87 @@ public class OAuth2UserController {
     }
 
     /**
-     * OAuth2 사용자 온보딩 상태 확인 API
-     * 실제 데이터베이스 상태와 인증 쿠키를 모두 확인하여 정확한 온보딩 상태 반환
-     *
-     * @param request HTTP 요청 (쿠키 확인용)
-     * @return 온보딩 상태 정보
+     * OAuth2 온보딩 상태 확인
+     * 사용자가 추가 정보 입력이 필요한지 확인하는 엔드포인트
+     * 인증 쿠키와 온보딩 쿠키를 확인하여 상태를 반환
+     * @param request HTTP 요청 객체
+     * @return 온보딩 상태 정보 (isNewUser, userId, needsAdditionalInfo)
      */
     @GetMapping("/onboarding/status")
-    @Operation(summary = "온보딩 상태 확인", description = "OAuth2 사용자의 온보딩 상태를 확인합니다.")
+    @Operation(summary = "Check Onboarding Status",
+            description = "Check OAuth2 user onboarding status and additional info requirements.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "상태 조회 성공")
+            @ApiResponse(responseCode = "200", description = "Status retrieved successfully")
     })
     public ResponseEntity<Map<String, Object>> getOnboardingStatus(HttpServletRequest request) {
-        log.info("온보딩 상태 확인 API 호출 시작");
+        log.info("OAuth2 온보딩 상태 확인 시작");
 
-        try {
-            // 1. 인증 쿠키 존재 여부 확인
-            boolean hasAuthCookies = hasAuthenticationCookies(request);
-            if (!hasAuthCookies) {
-                log.info("인증 쿠키 없음, 사용자 미인증 상태");
-                Map<String, Object> status = createOnboardingStatus(false, null, false);
-                return ResponseUtil.success(status);
-            }
-
-            // 2. 현재 로그인한 사용자 ID 확인 (보안 컨텍스트에서 추출)
-            String currentUserId = SecurityUtil.getCurrentUserId();
-            if (currentUserId == null) {
-                log.warn("보안 컨텍스트에서 사용자 ID를 가져올 수 없음");
-                Map<String, Object> status = createOnboardingStatus(false, null, false);
-                return ResponseUtil.success(status);
-            }
-
-            // 3. 쿠키에서 사용자 정보 추출
-            String userIdFromCookie = getCookieValue(request, "user_id", null);
-            boolean isNewUserFromCookie = getCookieValue(request, "is_new_user", "false").equals("true");
-
-            log.info("쿠키 정보 확인 - 현재 사용자 ID: {}, 쿠키 사용자 ID: {}, 쿠키 신규 사용자: {}",
-                    currentUserId, userIdFromCookie, isNewUserFromCookie);
-
-            // 4. 실제 데이터베이스에서 추가 정보 필요 여부 확인 (가장 신뢰할 수 있는 정보)
-            boolean needsAdditionalInfoFromDB = oAuth2UserService.needsAdditionalInfo(currentUserId);
-            boolean isOAuth2User = oAuth2UserService.isOAuth2User(currentUserId);
-
-            log.info("데이터베이스 확인 결과 - OAuth2 사용자: {}, 추가 정보 필요: {}",
-                    isOAuth2User, needsAdditionalInfoFromDB);
-
-            // 5. 쿠키와 데이터베이스 상태 불일치 시 로그 출력
-            if (isNewUserFromCookie != needsAdditionalInfoFromDB) {
-                log.warn("쿠키와 DB 상태 불일치 - 쿠키 신규사용자: {}, DB 추가정보필요: {}, 사용자 ID: {}",
-                        isNewUserFromCookie, needsAdditionalInfoFromDB, currentUserId);
-            }
-
-            // 6. 응답 생성 (데이터베이스 상태를 우선으로 함)
-            Long userIdLong = null;
-            if (userIdFromCookie != null) {
-                try {
-                    userIdLong = Long.parseLong(userIdFromCookie);
-                } catch (NumberFormatException e) {
-                    log.warn("쿠키의 사용자 ID 형식 오류: {}", userIdFromCookie);
-                }
-            }
-
-            Map<String, Object> status = createOnboardingStatus(
-                    needsAdditionalInfoFromDB,  // 데이터베이스 기준으로 결정
-                    userIdLong,
-                    needsAdditionalInfoFromDB   // needsAdditionalInfo도 DB 기준
+        // 인증 쿠키 확인 - 사용자가 로그인되어 있어야 함
+        boolean hasAuthCookies = hasAuthenticationCookies(request);
+        if (!hasAuthCookies) {
+            log.info("인증 쿠키 없음, 사용자 미인증 상태");
+            Map<String, Object> status = Map.of(
+                    "isNewUser", false,
+                    "userId", (Object) null,
+                    "needsAdditionalInfo", false
             );
-
-            log.info("최종 온보딩 상태 반환: {}", status);
-            return ResponseUtil.success(status);
-
-        } catch (Exception e) {
-            log.error("온보딩 상태 확인 중 오류 발생: {}", e.getMessage(), e);
-            // 오류 발생 시 안전한 기본값 반환
-            Map<String, Object> status = createOnboardingStatus(false, null, false);
             return ResponseUtil.success(status);
         }
-    }
 
-    /**
-     * 온보딩 상태 맵 생성 헬퍼 메서드
-     *
-     * @param isNewUser           신규 사용자 여부
-     * @param userId              사용자 ID
-     * @param needsAdditionalInfo 추가 정보 필요 여부
-     * @return 온보딩 상태 맵
-     */
-    private Map<String, Object> createOnboardingStatus(boolean isNewUser, Long userId, boolean needsAdditionalInfo) {
+        // 쿠키에서 온보딩 정보 확인
+        boolean isNewUser = getCookieValue(request, "is_new_user", "false").equals("true");
+        String userIdStr = getCookieValue(request, "user_id", null);
+
+        log.info("온보딩 쿠키 정보 - isNewUser: {}, userId: {}", isNewUser, userIdStr);
+
         Map<String, Object> status = new HashMap<>();
         status.put("isNewUser", isNewUser);
-        status.put("userId", userId);
+
+        // userId 파싱 및 추가 정보 필요 여부 확인
+        boolean needsAdditionalInfo = false;
+        if (userIdStr != null) {
+            try {
+                Long userId = Long.parseLong(userIdStr);
+                status.put("userId", userId);
+
+                // 추가 정보 입력 필요 여부 확인 (필수 3개 필드)
+                needsAdditionalInfo = oAuth2UserService.needsAdditionalInfo(userId);
+                log.info("사용자 {} 추가 정보 필요 여부: {}", userId, needsAdditionalInfo);
+
+            } catch (NumberFormatException e) {
+                log.warn("쿠키의 사용자 ID 형식이 잘못됨: {}", userIdStr);
+                status.put("userId", null);
+            }
+        } else {
+            status.put("userId", null);
+        }
+
         status.put("needsAdditionalInfo", needsAdditionalInfo);
-        return status;
+
+        log.info("최종 온보딩 상태: {}", status);
+        return ResponseUtil.success(status);
     }
 
     /**
-     * OAuth2 사용자 추가 정보 완성 API
+     * OAuth2 사용자 필수 정보 완성
      * 보안 컨텍스트에서 현재 로그인한 사용자 정보를 자동으로 추출하여 처리
+     * 필수 3개 필드(nickname, gender, birthday)를 모두 입력받아 사용자 정보 완성
      *
-     * @param completionDto 완성할 추가 정보
-     * @param request       HTTP 요청
-     * @param response      HTTP 응답
-     * @return 업데이트된 사용자 정보
+     * @param completionDto 필수 정보 완성 DTO (nickname, gender, birthday)
+     * @param request HTTP 요청 객체
+     * @param response HTTP 응답 객체 (쿠키 삭제용)
+     * @return 완성된 사용자 정보
      */
     @PostMapping("/complete")
     @PreAuthorize("isAuthenticated()") // 인증된 사용자만 접근 가능
-    @Operation(summary = "OAuth2 사용자 추가 정보 완성",
-            description = "OAuth2 로그인 후 필수 정보를 입력합니다. 사용자 ID는 보안 컨텍스트에서 자동 추출됩니다.")
+    @Operation(summary = "Complete OAuth2 User Required Information",
+            description = "Complete required information (nickname, gender, birthday) after OAuth2 login. User ID is automatically extracted from security context.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "정보 완성 성공"),
-            @ApiResponse(responseCode = "400", description = "잘못된 요청"),
-            @ApiResponse(responseCode = "401", description = "인증 필요"),
-            @ApiResponse(responseCode = "404", description = "사용자 없음")
+            @ApiResponse(responseCode = "200", description = "Information completed successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request or missing required fields"),
+            @ApiResponse(responseCode = "401", description = "Authentication required"),
+            @ApiResponse(responseCode = "404", description = "User not found"),
+            @ApiResponse(responseCode = "409", description = "Nickname already exists")
     })
     public ResponseEntity<Map<String, Object>> completeOAuth2UserInfo(
             @Valid @RequestBody OAuth2UserCompletionDto completionDto,
@@ -176,36 +155,44 @@ public class OAuth2UserController {
                 return ResponseUtil.error(org.springframework.http.HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
             }
 
-            log.info("OAuth2 사용자 정보 완성 시작 - 사용자 ID: {} (보안 컨텍스트에서 추출)", currentUserId);
+            log.info("OAuth2 사용자 필수 정보 완성 시작 - 사용자 ID: {} (보안 컨텍스트에서 추출)", currentUserId);
+            log.info("입력된 정보 - 닉네임: {}, 성별: {}, 생년월일: {}",
+                    completionDto.getNickname(), completionDto.getGender(), completionDto.getBirthday());
 
-            // OAuth2 사용자인지 확인
-            if (!oAuth2UserService.isOAuth2User(currentUserId)) {
-                log.error("OAuth2 사용자가 아님: {}", currentUserId);
-                return ResponseUtil.badRequest("OAuth2 사용자만 이 기능을 사용할 수 있습니다.");
-            }
-
-            // 사용자 정보 업데이트 (현재 사용자 ID와 완성 정보를 함께 전달)
+            // 사용자 정보 업데이트 (현재 사용자 ID와 필수 정보를 함께 전달)
             UserDto updatedUser = oAuth2UserService.completeUserInfoWithCurrentUser(currentUserId, completionDto);
 
-            // 온보딩 관련 쿠키 삭제 (OAuth2 추가 정보 완성 완료)
+            // 온보딩 완료 후 관련 쿠키 삭제
             clearOnboardingCookies(response);
 
-            log.info("OAuth2 사용자 정보 완성 성공 - 사용자 ID: {}, 닉네임: {}",
-                    currentUserId, updatedUser.getNickname());
+            log.info("OAuth2 사용자 필수 정보 완성 성공 - 사용자 ID: {}, 닉네임: {}, 성별: {}, 생년월일: {}",
+                    currentUserId, updatedUser.getNickname(), updatedUser.getGender(), updatedUser.getBirthday());
 
             return ResponseUtil.success(updatedUser);
 
         } catch (IllegalArgumentException e) {
             log.error("OAuth2 사용자 정보 완성 실패: {}", e.getMessage());
+
+            // 닉네임 중복 에러 처리
+            if (e.getMessage().contains("이미 존재하는 닉네임")) {
+                return ResponseUtil.error(org.springframework.http.HttpStatus.CONFLICT, e.getMessage());
+            }
+
             return ResponseUtil.badRequest(e.getMessage());
+
         } catch (Exception e) {
             log.error("OAuth2 사용자 정보 완성 중 예상치 못한 오류: {}", e.getMessage(), e);
             return ResponseUtil.internalServerError("사용자 정보 완성 중 오류가 발생했습니다.");
         }
     }
 
+    /**
+     * OAuth2 로그인 URL 조회
+     * 지원되는 OAuth2 제공자들의 로그인 URL을 반환
+     * @return OAuth2 제공자별 로그인 URL 맵
+     */
     @GetMapping("/login-urls")
-    @Operation(summary = "OAuth2 로그인 URL 조회", description = "사용 가능한 OAuth2 로그인 URL을 조회합니다.")
+    @Operation(summary = "Get OAuth2 Login URLs", description = "Retrieve available OAuth2 login URLs.")
     public ResponseEntity<Map<String, Object>> getOAuth2LoginUrls() {
         Map<String, String> loginUrls = oAuth2UserService.getOAuth2LoginUrls();
         return ResponseUtil.success(loginUrls);
@@ -214,22 +201,18 @@ public class OAuth2UserController {
     /**
      * 사용자의 인증 쿠키가 있는지 확인하는 헬퍼 메서드
      * access_token 쿠키 존재 여부를 통해 로그인 상태를 확인
-     *
      * @param request HTTP 요청 객체
      * @return 인증 쿠키 존재 여부
      */
     private boolean hasAuthenticationCookies(HttpServletRequest request) {
         String accessToken = getCookieValue(request, "access_token", null);
-        boolean hasAuth = accessToken != null && !accessToken.trim().isEmpty();
-        log.debug("인증 쿠키 확인 결과: {}", hasAuth);
-        return hasAuth;
+        return accessToken != null && !accessToken.trim().isEmpty();
     }
 
     /**
      * 요청에서 특정 쿠키 값을 가져오는 헬퍼 메서드
-     *
-     * @param request      HTTP 요청 객체
-     * @param name         쿠키 이름
+     * @param request HTTP 요청 객체
+     * @param name 쿠키 이름
      * @param defaultValue 기본값
      * @return 쿠키 값 (없으면 기본값)
      */
@@ -247,8 +230,8 @@ public class OAuth2UserController {
 
     /**
      * 온보딩 관련 쿠키들을 삭제하는 헬퍼 메서드
-     * OAuth2 사용자의 추가 정보 입력 완료 시 호출됨
-     *
+     * OAuth2 사용자의 필수 정보 입력 완료 시 호출됨
+     * 삭제되는 쿠키: is_new_user, user_id
      * @param response HTTP 응답 객체
      */
     private void clearOnboardingCookies(HttpServletResponse response) {
@@ -266,9 +249,8 @@ public class OAuth2UserController {
     /**
      * 특정 쿠키를 삭제하는 헬퍼 메서드
      * 쿠키의 만료 시간을 0으로 설정하여 브라우저에서 즉시 삭제되도록 함
-     *
      * @param response HTTP 응답 객체
-     * @param name     삭제할 쿠키 이름
+     * @param name 삭제할 쿠키 이름
      */
     private void clearCookie(HttpServletResponse response, String name) {
         Cookie cookie = new Cookie(name, "");
