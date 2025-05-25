@@ -5,8 +5,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+/**
+ * 방문 인증 요청 DTO
+ * 이미지 파일은 별도의 MultipartFile로 받으므로 이 DTO에서는 제외
+ */
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -25,6 +31,7 @@ public class VerificationRequestDto {
     @Schema(description = "여행 장소 평점", example = "4.5")
     private Double star;
 
-    @Schema(description = "인코딩된 이미지 데이터", example = "base64 encoded string")
-    private String image;
+    // 기존의 image 필드 제거 - MultipartFile로 별도 처리
+    // @Schema(description = "인코딩된 이미지 데이터", example = "base64 encoded string")
+    // private String image;
 }

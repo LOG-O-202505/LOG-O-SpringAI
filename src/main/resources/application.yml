@@ -87,6 +87,20 @@ spring:
   web:
     resources:
       static-locations: classpath:/static/
+  servlet:
+    multipart:
+      # 개별 파일 최대 크기 (기본값: 1MB)
+      max-file-size: 10MB
+      # 전체 요청 최대 크기 (기본값: 10MB)
+      max-request-size: 50MB
+      # 파일이 디스크에 기록되는 임계값 (기본값: 0B)
+      file-size-threshold: 2KB
+      # 업로드된 파일을 저장할 임시 디렉토리
+#      location: ${java.io.tmpdir}
+      # multipart 요청 해석 여부 (기본값: true)
+#      enabled: true
+      # lazy 해석 여부 (기본값: false)
+#      resolve-lazily: false
 # JWT 설정
 jwt:
   secret: ${JWT_SECRET}

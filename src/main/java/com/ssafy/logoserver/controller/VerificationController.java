@@ -13,9 +13,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -115,11 +117,12 @@ public class VerificationController {
     }
 
     /**
-     * 장소 방문 인증
+     * 장소 방문 인증 (파일 업로드 방식)
+     * JSON 데이터와 이미지 파일을 multipart/form-data로 함께 받습니다.
      */
-    @PostMapping("/verify")
+    @PostMapping(value = "/verify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "장소 방문 인증", description = "특정 장소에 대한 방문 인증을 추가합니다.")
+    @Operation(summary = "장소 방문 인증", description = "특정 장소에 대한 방문 인증을 추가합니다. 이미지 파일과 함께 인증 정보를 전송합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "인증 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청", content = @Content),
@@ -128,11 +131,35 @@ public class VerificationController {
     })
     public ResponseEntity<Map<String, Object>> verifyPlace(
             @Parameter(description = "방문 인증 정보", required = true)
-            @RequestBody VerificationRequestDto requestDto) {
+            @RequestPart("verification") VerificationRequestDto requestDto,
+            @Parameter(description = "인증 이미지 파일", required = true)
+            @RequestPart("image") MultipartFile imageFile) {
         try {
-            log.info("장소 방문 인증 요청 - pid: {}, address: {}", requestDto.getPid(), requestDto.getAddress());
-            VerificationDto verification = verificationService.addVerification(requestDto);
+            log.info("장소 방문 인증 요청 - pid: {}, address: {}, 이미지 파일: {}",
+                    requestDto.getPid(), requestDto.getAddress(),
+                    imageFile != null ? imageFile.getOriginalFilename() : "없음");
+
+            // 이미지 파일 유효성 검사
+            if (imageFile == null || imageFile.isEmpty()) {
+                return ResponseUtil.badRequest("인증 이미지 파일은 필수입니다.");
+            }
+
+            // 파일 크기 검사 (예: 10MB 제한)
+            long maxFileSize = 10 * 1024 * 1024; // 10MB
+            if (imageFile.getSize() > maxFileSize) {
+                return ResponseUtil.badRequest("이미지 파일 크기는 10MB를 초과할 수 없습니다.");
+            }
+
+            // 파일 타입 검사 (이미지 파일만 허용)
+            String contentType = imageFile.getContentType();
+            if (contentType == null || !contentType.startsWith("image/")) {
+                return ResponseUtil.badRequest("이미지 파일만 업로드 가능합니다.");
+            }
+
+            // 인증 데이터 저장 (이미지 파일과 함께)
+            VerificationDto verification = verificationService.addVerificationWithImage(requestDto, imageFile);
             return ResponseUtil.success(verification);
+
         } catch (IllegalArgumentException e) {
             log.error("방문 인증 실패: {}", e.getMessage());
             return ResponseUtil.badRequest(e.getMessage());
