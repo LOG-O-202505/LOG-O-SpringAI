@@ -4,6 +4,7 @@ import com.ssafy.logoserver.domain.area.entity.Area;
 import com.ssafy.logoserver.domain.area.repository.AreaRepository;
 import com.ssafy.logoserver.domain.image.dto.TravelImageDto;
 import com.ssafy.logoserver.domain.image.repository.TravelImageRepository;
+import com.ssafy.logoserver.domain.image.service.TravelImageService;
 import com.ssafy.logoserver.domain.travel.dto.*;
 import com.ssafy.logoserver.domain.travel.entity.Travel;
 import com.ssafy.logoserver.domain.travel.entity.TravelRoot;
@@ -21,6 +22,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,6 +37,66 @@ public class TravelService {
     private final TravelRootRepository travelRootRepository;
     private final AreaRepository areaRepository;
     private final UserRepository userRepository;
+    private final TravelImageService travelImageService;
+
+    /**
+     * 특정 사용자의 여행 목록 조회 (최근 이미지 URL 포함)
+     * 사용자 프로필 페이지에서 사용하는 메서드
+     * 각 여행의 가장 최근 이미지 URL을 함께 조회하여 반환
+     * @param userId 사용자 ID
+     * @return 최근 이미지 URL이 포함된 여행 목록
+     */
+    public List<TravelDto> getTravelsByUserIdWithLatestImages(String userId) {
+        log.info("사용자의 여행 목록 조회 시작 (최근 이미지 포함) - userId: {}", userId);
+
+        // 사용자 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 사용자 ID가 존재하지 않습니다: " + userId));
+
+        // 사용자의 모든 여행 조회
+        List<Travel> travels = travelRepository.findByUser(user);
+
+        if (travels.isEmpty()) {
+            log.info("사용자의 여행이 없습니다 - userId: {}", userId);
+            return new ArrayList<>();
+        }
+
+        // 여행 ID 목록 추출
+        List<Long> travelIds = travels.stream()
+                .map(Travel::getTuid)
+                .collect(Collectors.toList());
+
+        log.info("사용자의 여행 수: {} - userId: {}", travels.size(), userId);
+
+        // 각 여행의 최근 이미지 URL을 일괄 조회 (30분 만료)
+        Map<Long, String> latestImageUrls = travelImageService.getLatestTravelImageUrls(travelIds, 30);
+
+        // TravelDto 목록 생성 (최근 이미지 URL 포함)
+        List<TravelDto> travelDtos = travels.stream()
+                .map(travel -> {
+                    String latestImageUrl = latestImageUrls.get(travel.getTuid());
+                    return TravelDto.fromEntityWithLatestImage(travel, latestImageUrl);
+                })
+                .collect(Collectors.toList());
+
+        log.info("사용자의 여행 목록 조회 완료 (최근 이미지 포함) - userId: {}, 여행 수: {}, 이미지 있는 여행 수: {}",
+                userId, travelDtos.size(),
+                travelDtos.stream().mapToInt(dto -> dto.getLatestImageUrl() != null ? 1 : 0).sum());
+
+        return travelDtos;
+    }
+
+    /**
+     * 기존 메서드 유지 - 특정 사용자의 여행 목록 조회 (이미지 URL 미포함)
+     */
+    public List<TravelDto> getTravelsByUserId(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 사용자 ID가 존재하지 않습니다: " + userId));
+
+        return travelRepository.findByUser(user).stream()
+                .map(TravelDto::fromEntity)
+                .collect(Collectors.toList());
+    }
 
     /**
      * 모든 여행 목록 조회
@@ -70,18 +132,6 @@ public class TravelService {
         Travel travel = travelRepository.findById(tuid)
                 .orElseThrow(() -> new IllegalArgumentException("해당 여행이 존재하지 않습니다: " + tuid));
         return TravelDto.fromEntityWithRoots(travel);
-    }
-
-    /**
-     * 특정 사용자의 여행 목록 조회
-     */
-    public List<TravelDto> getTravelsByUserId(String userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 사용자 ID가 존재하지 않습니다: " + userId));
-
-        return travelRepository.findByUser(user).stream()
-                .map(TravelDto::fromEntity)
-                .collect(Collectors.toList());
     }
 
     /**
