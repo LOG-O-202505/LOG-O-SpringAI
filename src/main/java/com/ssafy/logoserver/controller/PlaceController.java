@@ -1,5 +1,6 @@
 package com.ssafy.logoserver.controller;
 
+import com.ssafy.logoserver.domain.area.dto.PlaceDetailDto;
 import com.ssafy.logoserver.domain.area.dto.PlaceDto;
 import com.ssafy.logoserver.domain.area.service.PlaceService;
 import com.ssafy.logoserver.utils.ResponseUtil;
@@ -10,6 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +21,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/places")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "Place API", description = "장소 관리 API")
 public class PlaceController {
 
@@ -93,5 +96,33 @@ public class PlaceController {
             @RequestParam String keyword) {
         List<PlaceDto> places = placeService.searchPlacesByNameKeyword(keyword);
         return ResponseUtil.success(places);
+    }
+
+    @GetMapping("/{puid}/detail")
+    @Operation(summary = "장소 상세 정보 조회", description = "장소의 모든 상세 정보(인증 정보, 사용자 좋아요 정보 포함)를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "404", description = "장소를 찾을 수 없음", content = @Content),
+            @ApiResponse(responseCode = "500", description = "서버 오류", content = @Content)
+    })
+    public ResponseEntity<Map<String, Object>> getPlaceDetail(
+            @Parameter(description = "장소 ID", required = true)
+            @PathVariable Long puid) {
+        try {
+            log.info("장소 상세 정보 조회 요청 - puid: {}", puid);
+
+            PlaceDetailDto placeDetail = placeService.getPlaceDetailById(puid);
+
+            log.info("장소 상세 정보 조회 완료 - 장소명: {}, 인증 수: {}, 좋아요 수: {}",
+                    placeDetail.getName(), placeDetail.getTotalReviewCount(), placeDetail.getTotalLikeCount());
+
+            return ResponseUtil.success(placeDetail);
+        } catch (IllegalArgumentException e) {
+            log.error("장소 상세 정보 조회 실패 - puid: {}, 오류: {}", puid, e.getMessage());
+            return ResponseUtil.notFound(e.getMessage());
+        } catch (Exception e) {
+            log.error("장소 상세 정보 조회 중 오류 발생 - puid: {}", puid, e);
+            return ResponseUtil.internalServerError("장소 상세 정보 조회 중 오류가 발생했습니다: " + e.getMessage());
+        }
     }
 }

@@ -56,7 +56,8 @@ public class Travel {
     @OneToMany(mappedBy = "travel", cascade = CascadeType.ALL)
     private List<TravelArea> travelAreas = new ArrayList<>();
 
-    @OneToMany(mappedBy = "travel", cascade = CascadeType.ALL)
+    // ✅ CASCADE 제거 - Travel 삭제 시 TravelImage는 삭제되지 않음
+    @OneToMany(mappedBy = "travel", fetch = FetchType.LAZY)
     private List<TravelImage> travelImages = new ArrayList<>();
 
     @OneToMany(mappedBy = "travel", cascade = CascadeType.ALL)

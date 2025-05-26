@@ -25,11 +25,12 @@ public class TravelImage {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    // ✅ nullable = true로 변경 - Travel이 삭제되어도 TravelImage는 남아있을 수 있음
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "travel_id", nullable = false)
+    @JoinColumn(name = "travel_id", nullable = true)
     private Travel travel;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "verification_id", nullable = false)
     private Verification verification;
 

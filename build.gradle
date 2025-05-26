@@ -57,6 +57,9 @@ dependencies {
     //redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
+    // MinIO 클라이언트 의존성 추가
+    implementation 'io.minio:minio:8.5.7'
+
     // MySQL 의존성
     runtimeOnly 'com.mysql:mysql-connector-j'
 

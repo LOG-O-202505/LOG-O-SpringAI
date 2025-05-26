@@ -232,7 +232,7 @@ public class UserController {
 
     @GetMapping("/profile")
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "내 프로필과 여행 정보 조회", description = "현재 로그인한 사용자의 프로필 정보와 여행 목록을 함께 조회합니다.")
+    @Operation(summary = "내 프로필과 여행 정보 조회", description = "현재 로그인한 사용자의 프로필 정보와 여행 목록(최근 이미지 URL 포함)을 함께 조회합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공"),
             @ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
@@ -245,20 +245,21 @@ public class UserController {
                 return ResponseUtil.error(org.springframework.http.HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
             }
 
-            log.info("사용자 프로필 및 여행 정보 조회 요청 - 사용자 ID: {}", currentUserId);
+            log.info("사용자 프로필 및 여행 정보 조회 요청 (최근 이미지 포함) - 사용자 ID: {}", currentUserId);
 
             // 사용자 정보 조회
             UserDto user = userService.getUserByLoginId(currentUserId);
 
-            // 해당 사용자의 여행 목록 조회
-            List<TravelDto> travels = travelService.getTravelsByUserId(currentUserId);
+            // 해당 사용자의 여행 목록 조회 (각 여행의 최근 이미지 URL 포함)
+            List<TravelDto> travels = travelService.getTravelsByUserIdWithLatestImages(currentUserId);
 
             // 통합 DTO 생성
             UserProfileWithTravelsDto profileWithTravels = UserProfileWithTravelsDto.fromUserAndTravels(
                     userService.getUserEntityByLoginId(currentUserId), travels);
 
-            log.info("사용자 프로필 및 여행 정보 조회 완료 - 사용자: {}, 여행 개수: {}",
-                    user.getNickname(), travels.size());
+            log.info("사용자 프로필 및 여행 정보 조회 완료 - 사용자: {}, 여행 개수: {}, 이미지 있는 여행: {}",
+                    user.getNickname(), travels.size(),
+                    travels.stream().mapToInt(dto -> dto.getLatestImageUrl() != null ? 1 : 0).sum());
 
             return ResponseUtil.success(profileWithTravels);
         } catch (IllegalArgumentException e) {

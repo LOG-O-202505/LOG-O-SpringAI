@@ -13,11 +13,13 @@ import com.ssafy.logoserver.domain.travel.repository.TravelAreaRepository;
 import com.ssafy.logoserver.domain.travel.repository.VerificationRepository;
 import com.ssafy.logoserver.domain.user.entity.User;
 import com.ssafy.logoserver.domain.user.repository.UserRepository;
+import com.ssafy.logoserver.service.MinIOService;
 import com.ssafy.logoserver.utils.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -36,6 +38,7 @@ public class VerificationService {
     private final PlaceRepository placeRepository;
     private final TravelAreaRepository travelAreaRepository;
     private final TravelImageRepository travelImageRepository;
+    private final MinIOService minIOService;
 
     /**
      * 모든 인증 정보 조회
@@ -96,13 +99,15 @@ public class VerificationService {
     }
 
     /**
-     * 방문 인증 추가
+     * 방문 인증 추가 (이미지 파일과 함께)
      * @param requestDto 방문 인증 요청 DTO
+     * @param imageFile 인증 이미지 파일
      * @return 생성된 인증 정보 DTO
      */
     @Transactional
-    public VerificationDto addVerification(VerificationRequestDto requestDto) {
-        log.info("방문 인증 요청 처리 시작 - pid: {}, address: {}", requestDto.getPid(), requestDto.getAddress());
+    public VerificationDto addVerificationWithImage(VerificationRequestDto requestDto, MultipartFile imageFile) {
+        log.info("방문 인증 요청 처리 시작 - pid: {}, address: {}, 이미지: {}",
+                requestDto.getPid(), requestDto.getAddress(), imageFile.getOriginalFilename());
 
         // 현재 로그인한 사용자 확인
         String currentUserId = SecurityUtil.getCurrentUserId();
@@ -114,81 +119,74 @@ public class VerificationService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 장소가 존재하지 않습니다."));
 
         // 인증 정보 생성
+        // created 필드는 @CreationTimestamp 어노테이션에 의해 자동으로 현재 시간이 설정됨
         Verification verification = Verification.builder()
                 .user(user)
                 .place(place)
                 .star(requestDto.getStar())
                 .review(requestDto.getReview())
+                // created 필드는 자동 생성되므로 별도로 설정하지 않음
                 .build();
 
         Verification savedVerification = verificationRepository.save(verification);
-        log.info("방문 인증 정보 저장 완료 - vuid: {}", savedVerification.getVuid());
+        log.info("방문 인증 정보 저장 완료 - vuid: {}, 생성시간: {}",
+                savedVerification.getVuid(), savedVerification.getCreated());
 
-        // 이미지 처리 (필요시)
-        if (requestDto.getImage() != null && !requestDto.getImage().isEmpty()) {
-            // 이미지 저장 로직
-            saveImageFromBase64(requestDto.getImage(), savedVerification);
+        // 이미지 파일이 있는 경우 MinIO에 업로드 및 TravelImage 생성
+        if (imageFile != null && !imageFile.isEmpty()) {
+            try {
+                // MinIO에 이미지 업로드
+                String objectKey = minIOService.uploadVerificationImage(
+                        imageFile,
+                        user.getUuid(),
+                        savedVerification.getVuid()
+                );
+
+                // 여행 정보 찾기
+                Travel travel = findTravelByPlaceAndUser(place, user);
+
+                // TravelImage 엔티티 생성 및 저장
+                TravelImage travelImage = TravelImage.builder()
+                        .user(user)
+                        .verification(savedVerification)
+                        .travel(travel)
+                        .name("방문 인증 이미지 - " + place.getName())
+                        .url(objectKey)  // MinIO 객체 키 저장
+                        .build();
+
+                travelImageRepository.save(travelImage);
+                log.info("여행 이미지 저장 완료 - tiuid: {}, objectKey: {}",
+                        travelImage.getTiuid(), objectKey);
+
+            } catch (Exception e) {
+                log.error("이미지 업로드 중 오류 발생", e);
+                // 인증 데이터는 이미 저장되었으므로, 이미지 업로드 실패만 로그 기록
+                // 필요에 따라 인증 데이터도 롤백할 수 있음
+            }
         }
 
         return VerificationDto.fromEntity(savedVerification);
     }
 
     /**
-     * Base64 인코딩된 이미지를 저장
-     * @param base64Image Base64 인코딩된 이미지 데이터
-     * @param verification 방문 인증 엔티티
+     * 기존 addVerification 메서드 (하위 호환성을 위해 유지하되 Deprecated 처리)
+     * @deprecated addVerificationWithImage 메서드 사용 권장
      */
+    @Deprecated
+    @Transactional
+    public VerificationDto addVerification(VerificationRequestDto requestDto) {
+        log.warn("Deprecated addVerification method called. Use addVerificationWithImage instead.");
+        throw new UnsupportedOperationException("이 메서드는 더 이상 지원되지 않습니다. addVerificationWithImage를 사용하세요.");
+    }
+
+    /**
+     * 기존 Base64 이미지 저장 메서드 (더 이상 사용하지 않음)
+     * @deprecated MinIO 업로드 방식으로 변경됨
+     */
+    @Deprecated
     private void saveImageFromBase64(String base64Image, Verification verification) {
-        try {
-            log.info("인증 이미지 저장 시작 - vuid: {}", verification.getVuid());
-
-            // Base64 디코딩
-            String imageData = base64Image;
-            if (base64Image.contains(",")) {
-                imageData = base64Image.split(",")[1];
-            }
-
-            byte[] decodedBytes = Base64.getDecoder().decode(imageData);
-
-            // 이미지 파일 저장 경로
-            String fileName = "verification_" + verification.getVuid() + ".jpg";
-            String filePath = "uploads/verifications/" + fileName;
-
-            // 디렉토리 생성
-            File directory = new File("uploads/verifications");
-            if (!directory.exists()) {
-                directory.mkdirs();
-            }
-
-            // 파일 저장
-            try (FileOutputStream outputStream = new FileOutputStream(filePath)) {
-                outputStream.write(decodedBytes);
-            }
-
-            log.info("인증 이미지 파일 저장 완료 - 경로: {}", filePath);
-
-            Place place = verification.getPlace();
-            User user = verification.getUser();
-
-            // 여행 찾기
-            Travel travel = findTravelByPlaceAndUser(place, user);
-
-            // TravelImage 엔티티 생성 및 저장
-            TravelImage travelImage = TravelImage.builder()
-                    .user(verification.getUser())
-                    .verification(verification)
-                    .travel(travel)
-                    .name("방문 인증 이미지")
-                    .url(filePath)
-                    .build();
-
-            travelImageRepository.save(travelImage);
-            log.info("여행 이미지 저장 완료 - tiuid: {}", travelImage.getTiuid());
-
-        } catch (Exception e) {
-            log.error("이미지 저장 중 오류 발생", e);
-            throw new RuntimeException("이미지 저장 중 오류 발생: " + e.getMessage(), e);
-        }
+        log.warn("Deprecated saveImageFromBase64 method called. MinIO upload is used instead.");
+        throw new UnsupportedOperationException("Base64 이미지 저장은 더 이상 지원되지 않습니다.");
     }
 
     /**
