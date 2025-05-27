@@ -93,6 +93,8 @@ public class SecurityConfig {
                         .requestMatchers("/", "/login", "/signup", "/error", "/mypage").permitAll()
                         // 정적 리소스 접근 허용
                         .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
+                        // 임시로 notion 링크는 접근 허용
+                        .requestMatchers("/api/notion/**", "/notion/**").permitAll()
                         // 나머지 API는 인증 필요
                         .requestMatchers("/api/**").authenticated()
 //                        .requestMatchers("/api/**").permitAll()
