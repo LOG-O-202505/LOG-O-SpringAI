@@ -5,7 +5,7 @@ spring:
     allow-bean-definition-overriding: true
   data:
     redis:
-      host: localhost
+      host: 58.76.166.46
       port: 6379
   jackson:
     time-zone: Asia/Seoul
@@ -111,10 +111,18 @@ jwt:
 
 # MinIO 설정 추가
 minio:
-  endpoint: http://localhost:9000
+  endpoint: http://58.76.166.46:9000
   access-key: ${MINIO_ACCESS_KEY}
   secret-key: ${MINIO_SECRET_KEY}
   bucket-name: ${MINIO_BUCKET_NAME}
+
+notion:
+  client:
+    id: ${NOTION_ID}
+    secret: ${NOTION_SECRET}
+  uri:
+    authorize-base-url: "https://api.notion.com/v1/oauth/authorize?owner=user"
+    redirect-url: "http://localhost:8080/api/notion/ai-to-notion"
 
 # 애플리케이션 도메인 설정 (쿠키에 사용)
 app:
