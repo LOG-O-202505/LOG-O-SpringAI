@@ -722,10 +722,17 @@ feature/ : 새로운 기능 개발
 hotfix/  : 긴급 버그 수정
 ```
 
-## 📞 개발자 정보
+## 👨‍💻 개발자 정보
 
-- **개발 인원**: 박병찬(팀장, FrontEnd, ElasticStack 및 AI 담당), 한승수(BackEnd, DB 및 인프라 구축 담당)
+- **개발 인원**: 박병찬(팀장, FrontEnd, EslasticStack 및 AI 담당), 한승수(BackEnd, DB 및 인프라 구축 담당)
 - **Connect**: qudcks8084@gmail.com, h2sorginal@gmail.com
+
+
+|                                                          **박병찬**                                                          |                                                          **한승수**                                                          |
+| :--------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------: |
+| [<img src="https://avatars.githubusercontent.com/u/47100335?v=4" height=150 width=150> <br/> @SIDEDISH](https://github.com/qudcks8084) | [<img src="https://github.com/user-attachments/assets/9948b5ea-272d-4ce4-9dd9-5a6d4cbd619f" height=150 width=150> <br/> @SEUNGSU-HAN](https://github.com/SEUNGSU-HAN) |
+|                                                       FE │ ES │ AI                                                        |                                                       BE │ DB │ INFRA                                                        |
+
 
 ---
 
