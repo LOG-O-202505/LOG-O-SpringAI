@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -378,7 +379,36 @@ public class TravelService {
                 .map(TravelPaymentDto::fromEntity)
                 .collect(Collectors.toList());
 
+        // ✅ TravelArea 목록을 start_time 기준으로 오름차순 정렬
+        // start_time이 null인 경우 가장 뒤로 정렬 (nullsLast 적용)
+
+        List<TravelAreaDto> travelAreas = travel.getTravelAreas().stream()
+                .map(TravelAreaDto::fromEntity)
+                .collect(Collectors.toList());
+
+        travelAreas.sort((area1, area2) -> {
+            LocalDateTime startTime1 = area1.getStartTime();
+            LocalDateTime startTime2 = area2.getStartTime();
+
+            // 둘 다 null인 경우 0 반환 (동일한 순서)
+            if (startTime1 == null && startTime2 == null) {
+                return 0;
+            }
+            // startTime1이 null인 경우 뒤로 정렬
+            if (startTime1 == null) {
+                return 1;
+            }
+            // startTime2가 null인 경우 뒤로 정렬
+            if (startTime2 == null) {
+                return -1;
+            }
+            // 둘 다 null이 아닌 경우 오름차순 정렬
+            return startTime1.compareTo(startTime2);
+        });
+
+        log.info("여행 지역 목록 start_time 기준 오름차순 정렬 완료 - 총 {}개 지역", travelAreas.size());
+
         // 상세 DTO 생성 및 반환
-        return TravelDetailDto.fromEntity(travel, travelImages, travelPayments);
+        return TravelDetailDto.fromEntity(travel, travelImages, travelPayments, travelAreas);
     }
 }
