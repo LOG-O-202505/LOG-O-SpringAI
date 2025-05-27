@@ -3,9 +3,11 @@ package com.ssafy.logoserver.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.*;
 
@@ -18,6 +20,8 @@ import java.util.*;
 @Slf4j
 public class NotionService {
 
+    @Autowired
+    private WebClient.Builder webClientBuilder;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -51,9 +55,20 @@ public class NotionService {
 
             HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
 
-            ResponseEntity<String> response = restTemplate.exchange(
-                    url, HttpMethod.PATCH, requestEntity, String.class
-            );
+//            ResponseEntity<String> response = restTemplate.exchange(
+//                    url, HttpMethod.PATCH, requestEntity, String.class
+//            );
+
+            ResponseEntity<String> response = webClientBuilder.build()
+                    .method(HttpMethod.PATCH)
+                    .uri(url)
+                    .header("Authorization", "Bearer " + accessToken)
+                    .header("Notion-Version", NOTION_VERSION)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(requestEntity.getBody())
+                    .retrieve()
+                    .toEntity(String.class)
+                    .block(); // 또는 비동기 처리
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 log.info("Notion 페이지 작성 성공 - pageId: {}", pageId);
