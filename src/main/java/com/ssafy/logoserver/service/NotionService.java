@@ -1,6 +1,14 @@
 package com.ssafy.logoserver.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.ssafy.logoserver.domain.travel.dto.TravelDetailDto;
+import com.ssafy.logoserver.domain.travel.dto.TravelIdDto;
+import com.ssafy.logoserver.domain.travel.entity.Travel;
+import com.ssafy.logoserver.domain.travel.repository.TravelRepository;
+import com.ssafy.logoserver.domain.travel.service.TravelService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 /**
@@ -28,6 +37,8 @@ public class NotionService {
     private static final String NOTION_API_BASE_URL = "https://api.notion.com/v1";
     private static final String NOTION_VERSION = "2022-06-28";
 
+    private final TravelService travelService;
+    private final TravelIdDto travelIdDto;
     /**
      * Notion 페이지에 AI 분석 결과를 작성
      * @param accessToken 사용자의 Notion 액세스 토큰
@@ -318,6 +329,50 @@ public class NotionService {
         } catch (Exception e) {
             log.error("Notion 페이지 존재 확인 중 오류 발생 - pageId: {}", pageId, e);
             return false;
+        }
+    }
+
+    public String getQuestionByTravelId(Long tuid, String userId) {
+        try {
+            // 여행 정보 조회
+            TravelDetailDto travelDetail = travelService.getTravelDetailById(tuid);
+
+            // 날짜 필드가 null인지 먼저 확인
+            if (travelDetail.getStartDate() == null || travelDetail.getEndDate() == null) {
+                throw new IllegalArgumentException("여행 시작일 또는 종료일이 없습니다.");
+            }
+
+            // 여행 일 수 계산 (양 끝 포함)
+            long days = ChronoUnit.DAYS.between(travelDetail.getStartDate(), travelDetail.getEndDate()) + 1;
+            log.info("getQuestion days : {}", days);
+
+            // ObjectMapper 설정 - LocalDate를 배열로 직렬화하도록 설정
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.registerModule(new JavaTimeModule());
+            objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+            // 배열 형태로 날짜를 직렬화하려면 다음 설정 사용
+            objectMapper.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+            // DTO를 JSON 문자열로 직렬화
+            String json = objectMapper.writeValueAsString(travelDetail);
+            log.info("Serialized JSON: {}", json);
+
+            // 최종 결과 문자열 - JSON을 그대로 포함
+            String result = String.format("%s %d일 여행 일정을 분석해주세요. 여행 정보: %s",
+                    travelDetail.getLocation(),
+                    days,
+                    json
+            );
+
+            log.info("getQuestion result : {}", result);
+            return result;
+
+        } catch (JsonProcessingException e) {
+            log.error("JSON 직렬화 오류", e);
+            throw new RuntimeException("여행 정보를 JSON으로 변환하는 중 오류가 발생했습니다.", e);
+        } catch (Exception e) {
+            log.error("여행 요약 문자열 생성 오류", e);
+            throw new RuntimeException("여행 요약 문자열 생성 실패: " + e.getMessage(), e);
         }
     }
 }

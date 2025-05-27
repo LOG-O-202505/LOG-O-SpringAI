@@ -271,4 +271,11 @@ public class UserService {
 
         return UserDto.fromEntity(user);
     }
+
+    public String getNotionPageIdById(String currentUserId) {
+        User user = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 사용자 ID가 존재하지 않습니다: " + currentUserId));
+
+        return user.getNotionPageId();
+    }
 }
