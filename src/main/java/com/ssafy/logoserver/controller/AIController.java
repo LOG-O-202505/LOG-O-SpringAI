@@ -15,6 +15,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/chat")
@@ -51,5 +58,33 @@ public class AIController {
             @RequestBody ChatRequest chatRequest) {
         ChatResponse chatResponse = AIService.chatWithAnthropic(chatRequest);
         return ResponseEntity.ok(chatResponse);
+    }
+
+    // 새로운 마크다운 파일 다운로드 메서드
+    @PostMapping("/anthropic/markdown")
+    @Operation(summary = "Anthropic Claude 모델과 채팅 (마크다운 파일 다운로드)",
+            description = "Anthropic Claude 모델을 사용한 채팅 응답을 .md 파일로 다운로드합니다.")
+    public ResponseEntity<Resource> chatWithAnthropicAsMarkdown(
+            @RequestBody ChatRequest chatRequest) throws IOException {
+
+        ChatResponse chatResponse = AIService.chatWithAnthropic(chatRequest);
+
+        // 마크다운 콘텐츠를 바이트 배열로 변환
+        byte[] markdownContent = chatResponse.getAnswer().getBytes(StandardCharsets.UTF_8);
+
+        // ByteArrayResource 생성
+        ByteArrayResource resource = new ByteArrayResource(markdownContent);
+
+        // 파일명 생성 (날짜 + chatId 사용)
+        String filename = String.format("travel-guide-%s-%s.md",
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")),
+                chatResponse.getChatId().toString().substring(0, 8));
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + filename + "\"")
+                .header(HttpHeaders.CONTENT_TYPE, "text/markdown; charset=UTF-8")
+                .contentLength(markdownContent.length)
+                .body(resource);
     }
 }

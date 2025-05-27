@@ -189,7 +189,7 @@ public class TravelAreaController {
             @Parameter(description = "여행 지역 추가 정보", required = true)
             @RequestBody TravelAreaRequestDto requestDto) {
         try {
-            log.info("여행 지역 추가 요청 - travel_id: {}, place_id: {}, address: {}",
+            log.info("여행 지역 추가 요청 - travel_id: {}, place_id: {} , address: {}",
                     requestDto.getTravel_id(), requestDto.getPlace_id(), requestDto.getAddress());
             TravelAreaDto travelArea = travelAreaService.addTravelAreaWithPlace(requestDto);
             return ResponseUtil.success(travelArea);
