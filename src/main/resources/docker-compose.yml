@@ -46,8 +46,8 @@ services:
       - "9000:9000"    # API 포트
       - "9001:9001"    # 콘솔 포트
     environment:
-      MINIO_ROOT_USER: banchan
-      MINIO_ROOT_PASSWORD: banchandev
+      MINIO_ROOT_USER: root
+      MINIO_ROOT_PASSWORD: root
     volumes:
       - minio-data:/data
     command: server /data --console-address ":9001"
