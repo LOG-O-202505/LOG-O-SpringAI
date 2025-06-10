@@ -1,4 +1,118 @@
-# LOG-O SpringAI 프로젝트
+# LOG-O Spring 백엔드 프로젝트
+
+## 🔧 초기 설정 가이드
+
+### 환경 변수 설정 (필수)
+
+프로젝트를 실행하기 전에 `application.yml` 파일내 환경 변수들을 설정해줘야 합니다.
+
+1. **Spring 설정**
+    ```bash
+    spring:
+      ...
+      data:
+        redis:
+          host: ${REDIS_HOST} #Redis DB URL 주소 (ex. localhot)
+          port: 6379 #Redis port number
+      ...
+      ai:
+        openai:
+          api-key: ${OPENAI_API_KEY} #사용자 OpenAI Key(ChatGPT Key)
+          chat:
+            options:
+              model: ${GPT_MODEL} #GPT Model(ex. gpt-4o)
+        anthropic:
+          api-key: ${ANTHROPIC_API_KEY} #사용자 AnthropicAI Key(Claude Key)
+          chat:
+            options:
+              model: ${CLAUDE_MODEL} #Claude Model(ex. claude-3-7-sonnet-latest)
+              max-tokens: 40000
+              temperature: 0.7
+      datasource:
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        url: ${DB_URL} #MySQL DB URL (ex. jdbc:mysql://{DB 주소}:{DB PORT}/{DB 이름}?useSSL\=false&serverTimezone\=Asia/Seoul&characterEncoding\=UTF-8&allowPublicKeyRetrieval\=true&useUnicode\=true)
+        username: ${DB_USER} #MySQL uername (ex. root)
+        password: ${DB_PASSWORD} #MySQL password (ex. root)
+      ...
+      security:
+        oauth2:
+          client:
+            ...
+            registration:
+              kakao:
+                client-id: ${KAKAO_CLIENT_ID} #사용자 Kakao Client ID
+                client-secret: ${KAKAO_CLIENT_SECRET} #사용자 Kakao Client Secret key
+                ...
+              naver:
+                client-id: ${NAVER_CLIENT_ID} #사용자 Naver Client ID
+                client-secret: ${NAVER_CLIENT_SECRET} #사용자 Naver Client Secret key
+                ...
+              google:
+                client-id: ${GOOGLE_CLIENT_ID} #사용자 Google Client ID
+                client-secret: ${GOOGLE_CLIENT_SECRET} #사용자 Google Client Secret key
+                ...
+      ...
+    ```
+2. **jwt 설정**
+    ```bash
+    # JWT 설정
+    jwt:
+      secret: ${JWT_SECRET} # HS512를 사용할 것이기 때문에, 512비트(64바이트) 이상이 되어야 함
+      access-token-validity: 36000 # 10시간
+      refresh-token-validity: 604800 # 7일
+    ```
+3. **MinIO 설정**
+    ```bash
+    # MinIO 설정 추가
+    minio:
+      endpoint: ${MINIO_ENDPOINT_URL} #MinIO URL 설정 (ex. http://localhost:9000)
+      access-key: ${MINIO_ACCESS_KEY} #사용자 지정 MinIO Access Key 설정 (MinIO ID)
+      secret-key: ${MINIO_SECRET_KEY} #사용자 지정 MinIO Secret Key 설정 (MinIO PW)
+      bucket-name: ${MINIO_BUCKET_NAME} #사용자 지정 MinIO Bucket Name 설정 (직접 생성한 Bucket명)
+    ```
+4. **Notion 설정**
+   ```bash
+   notion:
+     client:
+       id: ${NOTION_ID} #데이터를 기입할 노션 Page ID (page url 마지막의 숫자/문자열)(테스트용, 실제 데이터는 DB의 User 테이블에 저장하여 동적으로 사용)
+       secret: ${NOTION_SECRET} #Notion Integeration의 통합 key (ex. secret_...)
+     uri:
+       authorize-base-url: "https://api.notion.com/v1/oauth/authorize?owner=user"
+       redirect-url: "http://localhost:8080/api/notion/ai-to-notion" #Notion Integration 설정 시 해당 redirectURL 추가해줘야함
+   ```
+
+### 사전 준비사항
+
+1. **Docker DB Container Setting**
+    - Docker에 mysql latest ver container 띄우기
+    - Docker에 redis latest ver container 띄우기
+    - Docker에 minio/minio latest ver container 띄우기
+
+2. **MinIO Setting**
+    - Docker에 minio container 실행 후 http://localhost:{port} 로 접속 후 버킷 생성
+
+3. **API 키 발급**
+    - [Google cloud](https://console.cloud.google.com/welcome)에서 프로젝트 생성 후 API 키 발급 (Redirect URL도 함께 설정!)
+    - [카카오 Developers](https://developers.kakao.com)에서 애플리케이션 등록 후 API 키 발급 (Redirect URL도 함께 설정!)
+    - [네이버 Developers](https://developers.naver.com/main)에서 애플리케이션 등록 후 API 키 발급 (Redirect URL도 함께 설정!)
+    - [Notion Integration](https://www.notion.so/profile/integrations)에서 API 통합 등록 후 API 키 발급(public으로 설정)
+      - 통합 생성 후 사용할 Notion Page 우측 상단 `...`클릭 -> 하단의 통합(connection) 선택 -> 방금 만든 통합 등록
+
+### 프로젝트 실행
+
+```bash
+Step 1: 프로젝트 디렉토리로 이동
+  bashcd /path/to/your/spring-project
+  
+Step 2: 실행
+  ./gradlew bootRun
+
+Step 3: 실행 확인
+  콘솔에서 다음과 같은 메시지가 나오면 성공:
+    Started SpringSecurityApplication in 3.456 seconds (JVM running for 4.123)
+```
+
+---
 
 ## 📖 프로젝트 개요
 
@@ -15,7 +129,7 @@ LOG-O는 **여행 일정 관리 및 AI 통합 서비스**를 제공하는 Spring
 - **멀티 포맷 출력**: .md 파일 생성 및 API 전송
 
 ## 🏗️ 시스템 아키텍처
-
+![LOG-O PROJECT SERVER ARCHITECTURE.png](src/main/resources/static/assets/LOG-O%20PROJECT%20SERVER%20ARCHITECTURE.png)
 ```mermaid
 flowchart TB
     subgraph "Client Layer"
@@ -573,7 +687,7 @@ public String generatePresignedUrl(String objectKey, int expiryMinutes) {
 ### 환경 변수 설정
 ```bash
 # Database
-DB_URL=jdbc:mysql://localhost:3307/loggodb
+DB_URL=jdbc:mysql://{your-db-url}:{yout-db-port}/{your-db-name}?{addtional-setting}
 DB_USER=root
 DB_PASSWORD=root
 
@@ -595,9 +709,9 @@ KAKAO_CLIENT_ID=your-kakao-client-id
 KAKAO_CLIENT_SECRET=your-kakao-client-secret
 
 # MinIO
-MINIO_ACCESS_KEY=banchan
-MINIO_SECRET_KEY=banchandev
-MINIO_BUCKET_NAME=travel-images
+MINIO_ACCESS_KEY=your-minio-id
+MINIO_SECRET_KEY=your-minio-pw
+MINIO_BUCKET_NAME=your-minio-bucket-name
 
 # Application
 APP_DOMAIN=localhost
