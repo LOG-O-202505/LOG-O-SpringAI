@@ -615,7 +615,7 @@ public VerificationDto addVerificationWithImage(VerificationRequestDto requestDt
 - **MinIO 통합**: 안전한 이미지 저장 및 Presigned URL 생성
 - **자동 연결**: 사용자의 여행 일정과 자동 연결
 
-### 4. 🤖 AI 챗봇 시스템
+### 4. 🤖 AI 문서 자동화 시스템
 
 #### 다중 AI 모델 지원
 ```java
@@ -645,8 +645,8 @@ public class AIService {
 
 **AI 통합 특징:**
 - **다중 모델**: OpenAI GPT와 Anthropic Claude 동시 지원
-- **대화 메모리**: 세션별 대화 기록 유지
-- **캐릭터 설정**: "Detective Sherlock Bones" 캐릭터 적용
+- **문서 자동화**: NotionAPI 연결을 통한 문서 자동 기록 및 .md 파일 형식으로 추출
+- **프롬프트 설정**: resources/prompt에 강력 설계된 AI 프롬프트 설정
 
 ### 5. 🖼️ 이미지 관리 시스템
 
