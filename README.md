@@ -112,6 +112,11 @@ Step 3: 실행 확인
     Started SpringSecurityApplication in 3.456 seconds (JVM running for 4.123)
 ```
 
+### 프로젝트 실행 후 준비 사항
+1. **MySQL `areas` 테이블에 해당 데이터 추가**
+   - [areas-insert-sql-lowercase.sql](src/main/resources/static/assets/areas-insert-sql-lowercase.sql)
+
+
 ---
 
 ## 📖 프로젝트 개요
